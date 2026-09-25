@@ -37,6 +37,12 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "dd0c7195-c504-4b1d-9057-4892dacc51cc"
+      }
+    },
+    "owner": "southenx"
   }
 }
