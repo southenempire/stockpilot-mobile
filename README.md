@@ -1,6 +1,8 @@
 # 📱 StockPilot Mobile — Autonomous 24/7 AI Stock Robo-Advisor on Solana Seeker
 
 > Built natively for the **Solana Seeker** phone and the **Solana dApp Store** for the **Clock In Hackathon by RadiantsDAO & Solana Mobile**.
+> 
+> 📲 **Direct APK Download:** [Download StockPilot v1.0.0 APK](https://expo.dev/artifacts/eas/8X3WDGV6mUtTXMpDC2vIV3NTYD01l3DirkjjFXtzJiQ.apk)
 
 ---
 

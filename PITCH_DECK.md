@@ -1,6 +1,7 @@
 # 📱 StockPilot Mobile — Pitch Deck & Submission Details
 > **Built for Clock In — The 3rd Official Solana Mobile Hackathon by RadiantsDAO & Solana Mobile**  
 > **Submission Portal:** [https://solanamobile.radiant.nexus/](https://solanamobile.radiant.nexus/)  
+> **Direct APK Download:** [StockPilot-Release.apk (Expo Artifacts)](https://expo.dev/artifacts/eas/8X3WDGV6mUtTXMpDC2vIV3NTYD01l3DirkjjFXtzJiQ.apk)  
 > **GitHub Repository:** [https://github.com/southenempire/stockpilot-mobile](https://github.com/southenempire/stockpilot-mobile)  
 > **Web Platform:** [https://stockpilotsol.xyz](https://stockpilotsol.xyz)  
 
