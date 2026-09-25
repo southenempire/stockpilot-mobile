@@ -8,6 +8,7 @@ import {
   View,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { Header } from './src/components/Header';
 import { PortfolioCard } from './src/components/PortfolioCard';
@@ -134,6 +135,14 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#06080F" />
 
+      {/* Anime City Skyline Atmospheric Background Wallpaper */}
+      <Image
+        source={require('./assets/anime-city-bg.jpg')}
+        style={styles.bgWallpaper}
+        resizeMode="cover"
+      />
+      <View style={styles.bgOverlay} />
+
       {/* App Header */}
       <Header
         session={session}
@@ -219,6 +228,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#06080F',
+  },
+  bgWallpaper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.35,
+  },
+  bgOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(6, 8, 15, 0.70)',
   },
   scrollBody: {
     flex: 1,
