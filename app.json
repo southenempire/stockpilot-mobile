@@ -1,25 +1,42 @@
 {
   "expo": {
-    "name": "stockpilot-mobile",
+    "name": "StockPilot",
     "slug": "stockpilot-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "scheme": "stockpilot",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#06080F",
+      "resizeMode": "contain"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.southenempire.stockpilot"
     },
     "android": {
+      "package": "com.southenempire.stockpilot",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#06080F",
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "INTERNET"
+      ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "targetSdkVersion": 34,
+            "compileSdkVersion": 34
+          }
+        }
+      ]
+    ]
   }
 }
