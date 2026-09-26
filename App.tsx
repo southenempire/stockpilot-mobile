@@ -20,15 +20,19 @@ import { STOCK_BASKETS } from './src/constants/baskets';
 import { StockBasket, PortfolioPosition } from './src/types';
 import { MobileWalletManager, WalletSession } from './src/utils/mwa';
 import { simulateMarketMovement } from './src/utils/vault';
-import { Sparkles, Layers, ShieldCheck, Compass, Zap } from 'lucide-react-native';
+import { Sparkles, Wand2, Layers } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+
+type FilterCategory = 'ALL' | 'TECH' | 'SEEKER' | 'ENERGY';
 
 export default function App() {
   const [session, setSession] = useState<WalletSession | null>(null);
   const [skrBalance, setSkrBalance] = useState(1250);
+  const [solBalance, setSolBalance] = useState(2.45);
+  const [usdcBalance, setUsdcBalance] = useState(1500.0);
   const [baskets, setBaskets] = useState<StockBasket[]>(STOCK_BASKETS);
   const [selectedBasket, setSelectedBasket] = useState<StockBasket | null>(null);
-  const [activeTab, setActiveTab] = useState<'baskets' | 'vault'>('baskets');
+  const [filter, setFilter] = useState<FilterCategory>('ALL');
 
   // Active Portfolio State
   const [position, setPosition] = useState<PortfolioPosition | null>({
@@ -56,6 +60,7 @@ export default function App() {
     try {
       const sess = await walletManager.connect();
       setSession(sess);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: any) {
       console.warn(e);
     }
@@ -69,7 +74,6 @@ export default function App() {
   const handleConfirmInvest = async (amount: number) => {
     if (!selectedBasket) return;
 
-    // Simulate transaction execution
     const weights: { [s: string]: number } = {};
     selectedBasket.assets.forEach((a) => {
       weights[a.symbol] = a.weight;
@@ -88,9 +92,10 @@ export default function App() {
     };
 
     setPosition(newPosition);
+    setUsdcBalance((prev) => Math.max(0, prev - amount));
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert(
-      'Deposit Successful! 🎉',
+      'Deposit Confirmed! 🎉',
       `Allocated $${amount} USDC to ${selectedBasket.name} via non-custodial Anchor vault PDA.`
     );
   };
@@ -100,7 +105,6 @@ export default function App() {
     setIsRebalancing(true);
 
     setTimeout(async () => {
-      // Restore weights to target
       setPosition({
         ...position,
         currentWeights: { ...position.targetWeights },
@@ -129,13 +133,45 @@ export default function App() {
 
   const handleClaimSkr = () => {
     setSkrBalance((prev) => prev + 1000);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('Faucet Claimed! 💎', 'Added 1,000 $SKR tokens to your Seeker wallet.');
   };
+
+  const handleFaucetPress = () => {
+    setSolBalance((prev) => prev + 1.0);
+    setUsdcBalance((prev) => prev + 500.0);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('Devnet Faucet Funded! 🚰', 'Received 1.0 Devnet SOL & $500 Devnet USDC.');
+  };
+
+  const handleWithdrawPress = () => {
+    if (!position || position.currentNav <= 0) {
+      Alert.alert('Vault Empty', 'No active position to withdraw.');
+      return;
+    }
+    const withdrawAmount = position.currentNav;
+    setUsdcBalance((prev) => prev + withdrawAmount);
+    setPosition(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert(
+      'Withdrawal Complete 💰',
+      `Withdrew $${withdrawAmount.toFixed(2)} USDC from Anchor Vault to your connected wallet.`
+    );
+  };
+
+  // Filtered baskets
+  const filteredBaskets = baskets.filter((b) => {
+    if (filter === 'TECH') return b.category.includes('Tech') || b.category.includes('Semiconductors');
+    if (filter === 'SEEKER') return b.isSkrExclusive || b.category.includes('Seeker');
+    if (filter === 'ENERGY') return b.category.includes('Energy');
+    return true;
+  });
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#06080F" />
 
-      {/* Anime City Skyline Atmospheric Background Wallpaper */}
+      {/* Atmospheric Anime City Skyline Wallpaper */}
       <Image
         source={require('./assets/anime-city-bg.jpg')}
         style={styles.bgWallpaper}
@@ -143,7 +179,7 @@ export default function App() {
       />
       <View style={styles.bgOverlay} />
 
-      {/* App Header */}
+      {/* Header */}
       <Header
         session={session}
         skrBalance={skrBalance}
@@ -152,43 +188,92 @@ export default function App() {
       />
 
       <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
-        {/* Portfolio Vault Card */}
+        {/* Main Hero Portfolio Card */}
         <PortfolioCard
           position={position}
+          solBalance={solBalance}
+          usdcBalance={usdcBalance}
           isRebalancing={isRebalancing}
+          onDepositPress={() => {
+            if (baskets.length > 0) {
+              setSelectedBasket(baskets[0]);
+              setIsInvestModalVisible(true);
+            }
+          }}
+          onWithdrawPress={handleWithdrawPress}
           onRebalance={handleRebalance}
+          onFaucetPress={handleFaucetPress}
           onSimulateShock={handleSimulateShock}
         />
 
-        {/* AI Action Banner */}
-        <View style={styles.aiBanner}>
+        {/* AI Strategy Generator Banner */}
+        <TouchableOpacity
+          style={styles.aiBanner}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setIsAiModalVisible(true);
+          }}
+          activeOpacity={0.88}
+        >
           <View style={styles.aiBannerLeft}>
-            <Sparkles size={18} color="#A855F7" />
-            <View>
-              <Text style={styles.aiBannerTitle}>AI Thesis Generator</Text>
-              <Text style={styles.aiBannerDesc}>Synthesize custom stock strategies from natural language</Text>
+            <View style={styles.aiIconBadge}>
+              <Wand2 size={16} color="#A855F7" />
+            </View>
+            <View style={styles.aiTextContainer}>
+              <View style={styles.aiTitleRow}>
+                <Text style={styles.aiBannerTitle}>AI Strategy Architect</Text>
+                <Sparkles size={12} color="#C084FC" />
+              </View>
+              <Text style={styles.aiBannerDesc}>
+                Synthesize custom stock baskets from plain English macro ideas
+              </Text>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.aiBannerBtn}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setIsAiModalVisible(true);
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.aiBannerBtnText}>Create</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Section Heading */}
+          <View style={styles.aiCreatePill}>
+            <Text style={styles.aiCreateText}>Create ›</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Section Heading & Category Filters */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Thematic Equity Baskets</Text>
-          <Text style={styles.sectionCount}>{baskets.length} Strategies</Text>
+          <Text style={styles.sectionCount}>{filteredBaskets.length} Strategies</Text>
         </View>
 
-        {/* Baskets List */}
-        {baskets.map((basket) => (
+        <View style={styles.filterRow}>
+          {[
+            { id: 'ALL', label: 'All Baskets' },
+            { id: 'TECH', label: '⚡ Tech' },
+            { id: 'SEEKER', label: '💎 $SKR Alpha' },
+            { id: 'ENERGY', label: '🌿 Energy' },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.filterPill,
+                filter === item.id && styles.filterPillActive,
+              ]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setFilter(item.id as FilterCategory);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  filter === item.id && styles.filterTextActive,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Baskets Cards List */}
+        {filteredBaskets.map((basket) => (
           <BasketCard
             key={basket.id}
             basket={basket}
@@ -196,7 +281,7 @@ export default function App() {
           />
         ))}
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: 48 }} />
       </ScrollView>
 
       {/* Modals */}
@@ -251,26 +336,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   aiBanner: {
-    marginHorizontal: 20,
-    marginTop: 14,
-    backgroundColor: '#130E26',
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: '#0E0A1E',
     borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.4)',
-    borderRadius: 16,
+    borderColor: 'rgba(168, 85, 247, 0.45)',
+    borderRadius: 18,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
   },
   aiBannerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     flex: 1,
-    paddingRight: 10,
+    paddingRight: 8,
+  },
+  aiIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(168, 85, 247, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiTextContainer: {
+    flex: 1,
+  },
+  aiTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   aiBannerTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
     color: '#F8FAFC',
   },
@@ -278,35 +385,64 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94A3B8',
     marginTop: 2,
+    lineHeight: 14,
   },
-  aiBannerBtn: {
+  aiCreatePill: {
     backgroundColor: '#A855F7',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 10,
   },
-  aiBannerBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
+  aiCreateText: {
+    fontSize: 11,
+    fontWeight: '900',
     color: '#FFFFFF',
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: 20,
-    marginTop: 22,
-    marginBottom: 12,
+    marginHorizontal: 16,
+    marginTop: 18,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: '#F8FAFC',
-    letterSpacing: 0.5,
+    letterSpacing: -0.2,
   },
   sectionCount: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
     color: '#00F0FF',
+    fontFamily: 'monospace',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    gap: 6,
+  },
+  filterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: '#1E293B',
+  },
+  filterPillActive: {
+    backgroundColor: 'rgba(0, 240, 255, 0.15)',
+    borderColor: '#00F0FF',
+  },
+  filterText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  filterTextActive: {
+    color: '#00F0FF',
+    fontWeight: '800',
   },
 });

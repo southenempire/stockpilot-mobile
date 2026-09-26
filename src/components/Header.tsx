@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { WalletSession } from '../utils/mwa';
-import { Sparkles, ShieldCheck, Wallet, ChevronRight } from 'lucide-react-native';
+import { Sparkles, ShieldCheck, Wallet } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface HeaderProps {
@@ -11,182 +11,182 @@ interface HeaderProps {
   onSkrPress: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ session, skrBalance, onConnectPress, onSkrPress }) => {
+export const Header: React.FC<HeaderProps> = ({
+  session,
+  skrBalance,
+  onConnectPress,
+  onSkrPress,
+}) => {
   const shortAddress = session
     ? `${session.publicKey.toBase58().slice(0, 4)}...${session.publicKey.toBase58().slice(-4)}`
     : 'Connect Wallet';
 
   return (
     <View style={styles.container}>
-      {/* Brand & Devnet Status */}
-      <View style={styles.brandRow}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logoIcon}>⚡</Text>
-          <View>
-            <Text style={styles.brandTitle}>STOCKPILOT</Text>
-            <View style={styles.liveIndicatorRow}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>Solana Seeker • Devnet</Text>
-            </View>
-          </View>
+      {/* Top Network & $SKR Chips Row */}
+      <View style={styles.topStatusRow}>
+        <View style={styles.networkBadge}>
+          <View style={styles.networkPulse} />
+          <Text style={styles.networkText}>Solana Devnet</Text>
         </View>
 
-        {/* SKR VIP Badge */}
         <TouchableOpacity
-          style={styles.skrBadge}
+          style={styles.skrChip}
           onPress={() => {
             Haptics.selectionAsync();
             onSkrPress();
           }}
           activeOpacity={0.8}
         >
-          <Sparkles size={13} color="#A855F7" />
-          <Text style={styles.skrText}>{skrBalance} $SKR</Text>
-          <ChevronRight size={11} color="#A855F7" />
+          <Sparkles size={11} color="#00F0FF" />
+          <Text style={styles.skrChipText}>
+            $SKR Balance: <Text style={styles.skrChipBold}>{skrBalance.toLocaleString()} SKR</Text>
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Wallet Connect Bar */}
-      <TouchableOpacity
-        style={[styles.walletButton, session ? styles.walletConnected : styles.walletDisconnected]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onConnectPress();
-        }}
-        activeOpacity={0.85}
-      >
-        <View style={styles.walletLeft}>
-          <Wallet size={15} color={session ? '#00F0FF' : '#94A3B8'} />
-          <Text style={[styles.walletText, session ? styles.walletTextActive : styles.walletTextInactive]}>
-            {shortAddress}
+      {/* Main Brand Logo & MWA Wallet Connect */}
+      <View style={styles.brandRow}>
+        <View style={styles.brandLeft}>
+          <Text style={styles.brandLogo}>
+            Stock<Text style={styles.brandLogoCyan}>Pilot</Text>
           </Text>
+          <Text style={styles.brandSubtitle}>Autonomous 24/7 AI Robo-Advisor</Text>
         </View>
-        {session ? (
-          <View style={styles.connectedTag}>
-            <ShieldCheck size={13} color="#10B981" />
-            <Text style={styles.connectedTagText}>MWA Active</Text>
-          </View>
-        ) : (
-          <Text style={styles.connectCta}>1-Tap Connect ›</Text>
-        )}
-      </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.walletBtn,
+            session ? styles.walletBtnConnected : styles.walletBtnDisconnected,
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            onConnectPress();
+          }}
+          activeOpacity={0.85}
+        >
+          {session ? (
+            <>
+              <ShieldCheck size={14} color="#10B981" />
+              <Text style={styles.walletTextConnected}>{shortAddress}</Text>
+            </>
+          ) : (
+            <>
+              <Wallet size={14} color="#00F0FF" />
+              <Text style={styles.walletTextDisconnected}>Connect Seeker</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 16,
-    backgroundColor: '#06080F',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
-  brandRow: {
+  topStatusRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  logoBadge: {
+  networkBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-  },
-  logoIcon: {
-    fontSize: 22,
-  },
-  brandTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#F8FAFC',
-    letterSpacing: 1.2,
-  },
-  liveIndicatorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     gap: 5,
-    marginTop: 2,
   },
-  liveDot: {
+  networkPulse: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: '#10B981',
   },
-  liveText: {
+  networkText: {
     fontSize: 10,
-    color: '#94A3B8',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontWeight: '800',
+    color: '#34D399',
+    fontFamily: 'monospace',
   },
-  skrBadge: {
+  skrChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(168, 85, 247, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+    backgroundColor: 'rgba(0, 240, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.4)',
-    gap: 4,
+    borderColor: 'rgba(0, 240, 255, 0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    gap: 5,
   },
-  skrText: {
-    fontSize: 12,
+  skrChipText: {
+    fontSize: 10,
     fontWeight: '700',
-    color: '#C084FC',
+    color: '#94A3B8',
+    fontFamily: 'monospace',
   },
-  walletButton: {
+  skrChipBold: {
+    color: '#00F0FF',
+    fontWeight: '900',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  brandLeft: {
+    flexDirection: 'column',
+  },
+  brandLogo: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  brandLogoCyan: {
+    color: '#00F0FF',
+  },
+  brandSubtitle: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  walletBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
+    gap: 6,
   },
-  walletDisconnected: {
-    backgroundColor: 'rgba(30, 41, 59, 0.7)',
-    borderColor: '#334155',
+  walletBtnDisconnected: {
+    backgroundColor: 'rgba(0, 240, 255, 0.1)',
+    borderColor: 'rgba(0, 240, 255, 0.35)',
   },
-  walletConnected: {
-    backgroundColor: 'rgba(0, 240, 255, 0.08)',
-    borderColor: 'rgba(0, 240, 255, 0.3)',
+  walletBtnConnected: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderColor: 'rgba(16, 185, 129, 0.35)',
   },
-  walletLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  walletText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  walletTextActive: {
-    color: '#F1F5F9',
-  },
-  walletTextInactive: {
-    color: '#94A3B8',
-  },
-  connectedTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    gap: 4,
-  },
-  connectedTagText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#10B981',
-  },
-  connectCta: {
+  walletTextDisconnected: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#00F0FF',
+  },
+  walletTextConnected: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#10B981',
+    fontFamily: 'monospace',
   },
 });

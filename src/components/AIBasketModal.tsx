@@ -11,7 +11,7 @@ import {
   Keyboard,
   ScrollView,
 } from 'react-native';
-import { StockBasket, StockAsset } from '../types';
+import { StockBasket } from '../types';
 import { X, Sparkles, Wand2, CheckCircle2, ArrowRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -21,12 +21,19 @@ interface AIBasketModalProps {
   onBasketCreated: (basket: StockBasket) => void;
 }
 
+const QUICK_SUGGESTIONS = [
+  '⚡ Nuclear Energy powering AI Data Centers',
+  '🚀 Space exploration, satellites & lunar supply',
+  '🧬 Biotech GLP-1 & longevity therapeutics',
+  '🤖 Humanoid robotics & battery supply chains',
+];
+
 export const AIBasketModal: React.FC<AIBasketModalProps> = ({
   visible,
   onClose,
   onBasketCreated,
 }) => {
-  const [prompt, setPrompt] = useState('Next-gen AI datacenters, liquid cooling, and quantum computing');
+  const [prompt, setPrompt] = useState('Nuclear energy powering AI data centers');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBasket, setGeneratedBasket] = useState<StockBasket | null>(null);
 
@@ -35,23 +42,22 @@ export const AIBasketModal: React.FC<AIBasketModalProps> = ({
     setIsGenerating(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Simulate AI LLM reasoning and allocation synthesis
     setTimeout(async () => {
       const newBasket: StockBasket = {
         id: `ai-custom-${Date.now()}`,
-        name: 'AI Quantum Infrastructure',
-        tagline: prompt.slice(0, 45) + '...',
-        category: 'AI Generated',
-        apy: '38.6%',
+        name: 'AI Nuclear Energy Grid',
+        tagline: prompt.slice(0, 48) + '...',
+        category: 'AI Synthesized',
+        apy: '+44.2% APY',
         risk: 'High',
         color: '#A855F7',
-        description: `Custom algorithmic thematic basket generated from prompt: "${prompt}"`,
+        description: `Autonomous algorithmic strategy synthesized from prompt: "${prompt}"`,
         assets: [
           { symbol: 'NVDA', name: 'NVIDIA Corp', weight: 35, price: 128.50, change24h: 3.42, mint: 'NVDA_DEVNET_MINT' },
-          { symbol: 'SMCI', name: 'Super Micro Computer', weight: 25, price: 44.80, change24h: 6.15, mint: 'SMCI_DEVNET_MINT' },
-          { symbol: 'VRT', name: 'Vertiv Holdings', weight: 20, price: 104.20, change24h: 2.80, mint: 'VRT_DEVNET_MINT' },
-          { symbol: 'IONQ', name: 'IonQ Quantum', weight: 20, price: 12.90, change24h: 8.40, mint: 'IONQ_DEVNET_MINT' },
-        ]
+          { symbol: 'CEG', name: 'Constellation Energy', weight: 30, price: 268.40, change24h: 5.12, mint: 'CEG_DEVNET_MINT' },
+          { symbol: 'VST', name: 'Vistra Corp', weight: 20, price: 118.90, change24h: 4.80, mint: 'VST_DEVNET_MINT' },
+          { symbol: 'CCJ', name: 'Cameco Uranium', weight: 15, price: 54.20, change24h: 2.10, mint: 'CCJ_DEVNET_MINT' },
+        ],
       };
 
       setGeneratedBasket(newBasket);
@@ -75,7 +81,7 @@ export const AIBasketModal: React.FC<AIBasketModalProps> = ({
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.titleRow}>
-                <Sparkles size={20} color="#A855F7" />
+                <Sparkles size={18} color="#A855F7" />
                 <Text style={styles.title}>AI Thesis Architect</Text>
               </View>
               <TouchableOpacity
@@ -91,44 +97,38 @@ export const AIBasketModal: React.FC<AIBasketModalProps> = ({
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.subtitle}>
-                Describe any investment thesis or market sector. The AI model will calculate optimal asset weights and mint a non-custodial strategy.
+                Type any macro investment thesis. The AI engine dynamically parses market drivers and computes optimal equity weights.
               </Text>
 
               {/* Prompt Input */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Investment Thesis / Macro Theme</Text>
+                <Text style={styles.inputLabel}>Macro Thesis or Market Sector</Text>
                 <TextInput
                   style={styles.input}
                   multiline
                   numberOfLines={3}
                   value={prompt}
                   onChangeText={setPrompt}
-                  placeholder="e.g. Autonomous robotics, drones, and battery supply chains"
+                  placeholder="e.g. Next-gen nuclear SMRs for hyperscaler AI data centers"
                   placeholderTextColor="#475569"
                 />
               </View>
 
-              {/* Presets */}
-              <View style={styles.presetsRow}>
-                <TouchableOpacity
-                  style={styles.presetChip}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setPrompt('Space exploration, satellite telecom & lunar logistics');
-                  }}
-                >
-                  <Text style={styles.presetText}>🚀 Space & Satellites</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.presetChip}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setPrompt('Biotech breakthroughs, GLP-1 & longevity genomics');
-                  }}
-                >
-                  <Text style={styles.presetText}>🧬 Bio & Genomics</Text>
-                </TouchableOpacity>
+              {/* Quick Suggestions */}
+              <Text style={styles.suggestionsLabel}>Quick Ideas</Text>
+              <View style={styles.suggestionsList}>
+                {QUICK_SUGGESTIONS.map((sugg) => (
+                  <TouchableOpacity
+                    key={sugg}
+                    style={styles.suggChip}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setPrompt(sugg.replace(/^[^\w]+/, '').trim());
+                    }}
+                  >
+                    <Text style={styles.suggText}>{sugg}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
 
               {/* Generate CTA */}
@@ -143,7 +143,7 @@ export const AIBasketModal: React.FC<AIBasketModalProps> = ({
                 ) : (
                   <>
                     <Wand2 size={16} color="#FFFFFF" />
-                    <Text style={styles.generateBtnText}>Generate Custom Basket</Text>
+                    <Text style={styles.generateBtnText}>Synthesize Custom Strategy</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -157,12 +157,16 @@ export const AIBasketModal: React.FC<AIBasketModalProps> = ({
                   </View>
 
                   <Text style={styles.previewBasketName}>{generatedBasket.name}</Text>
-                  <Text style={styles.previewApy}>Target APY: {generatedBasket.apy}</Text>
+                  <Text style={styles.previewApy}>Target: {generatedBasket.apy}</Text>
 
+                  {/* Weights Breakdown */}
                   <View style={styles.previewAssets}>
                     {generatedBasket.assets.map((a) => (
                       <View key={a.symbol} style={styles.previewAssetRow}>
-                        <Text style={styles.previewSymbol}>{a.symbol} ({a.name})</Text>
+                        <View style={styles.symbolTag}>
+                          <Text style={styles.previewSymbol}>{a.symbol}</Text>
+                          <Text style={styles.previewName}>{a.name}</Text>
+                        </View>
                         <Text style={styles.previewWeight}>{a.weight}%</Text>
                       </View>
                     ))}
@@ -173,7 +177,7 @@ export const AIBasketModal: React.FC<AIBasketModalProps> = ({
                     onPress={handleUseBasket}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.useStrategyText}>Allocate USDC to This Strategy</Text>
+                    <Text style={styles.useStrategyText}>Allocate Vault USDC to This Strategy</Text>
                     <ArrowRight size={14} color="#06080F" />
                   </TouchableOpacity>
                 </View>
@@ -193,19 +197,20 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#0A101C',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    padding: 24,
+    padding: 22,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#1E293B',
     maxHeight: '90%',
+    paddingBottom: 36,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   titleRow: {
     flexDirection: 'row',
@@ -213,7 +218,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: '#F8FAFC',
   },
@@ -226,46 +231,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#94A3B8',
     lineHeight: 18,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   inputContainer: {
     marginBottom: 12,
   },
   inputLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: '#CBD5E1',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   input: {
     backgroundColor: '#06080F',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#1E293B',
     borderRadius: 14,
     padding: 14,
     fontSize: 14,
-    color: '#F8FAFC',
-    minHeight: 80,
+    color: '#FFFFFF',
+    minHeight: 70,
     textAlignVertical: 'top',
   },
-  presetsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  suggestionsLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    fontFamily: 'monospace',
+    marginBottom: 6,
+  },
+  suggestionsList: {
+    gap: 6,
     marginBottom: 16,
   },
-  presetChip: {
-    backgroundColor: '#1E293B',
+  suggChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#1E293B',
   },
-  presetText: {
+  suggText: {
     fontSize: 11,
+    color: '#CBD5E1',
     fontWeight: '600',
-    color: '#94A3B8',
   },
   generateBtn: {
     flexDirection: 'row',
@@ -276,6 +288,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     gap: 8,
     marginBottom: 16,
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   btnDisabled: {
     opacity: 0.6,
@@ -286,7 +302,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   previewBox: {
-    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+    backgroundColor: 'rgba(168, 85, 247, 0.08)',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -300,44 +316,59 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   previewTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
     color: '#10B981',
     textTransform: 'uppercase',
+    fontFamily: 'monospace',
   },
   previewBasketName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
   },
   previewApy: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#00F0FF',
     marginTop: 2,
     marginBottom: 10,
+    fontFamily: 'monospace',
   },
   previewAssets: {
     backgroundColor: '#06080F',
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 10,
     gap: 6,
-    marginBottom: 12,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#1E293B',
   },
   previewAssetRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  symbolTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   previewSymbol: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#E2E8F0',
+    fontWeight: '800',
+    color: '#FFFFFF',
+    fontFamily: 'monospace',
+  },
+  previewName: {
+    fontSize: 11,
+    color: '#64748B',
   },
   previewWeight: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
     color: '#A855F7',
+    fontFamily: 'monospace',
   },
   useStrategyBtn: {
     flexDirection: 'row',
@@ -350,7 +381,7 @@ const styles = StyleSheet.create({
   },
   useStrategyText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#06080F',
   },
 });
