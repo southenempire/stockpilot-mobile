@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { Header } from './src/components/Header';
 import { PortfolioCard } from './src/components/PortfolioCard';
@@ -16,16 +18,27 @@ import { BasketCard } from './src/components/BasketCard';
 import { InvestModal } from './src/components/InvestModal';
 import { AIBasketModal } from './src/components/AIBasketModal';
 import { SkrPerksModal } from './src/components/SkrPerksModal';
+import { AILabScreen } from './src/components/AILabScreen';
+import { VaultScreen } from './src/components/VaultScreen';
 import { STOCK_BASKETS } from './src/constants/baskets';
 import { StockBasket, PortfolioPosition } from './src/types';
 import { MobileWalletManager, WalletSession } from './src/utils/mwa';
 import { simulateMarketMovement } from './src/utils/vault';
-import { Sparkles, Wand2, Layers } from 'lucide-react-native';
+import {
+  BarChart3,
+  Layers,
+  Sparkles,
+  ShieldCheck,
+} from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
+type TabId = 'portfolio' | 'baskets' | 'ai' | 'vault';
 type FilterCategory = 'ALL' | 'TECH' | 'SEEKER' | 'ENERGY';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 export default function App() {
+  const [activeTab, setActiveTab] = useState<TabId>('portfolio');
   const [session, setSession] = useState<WalletSession | null>(null);
   const [skrBalance, setSkrBalance] = useState(1250);
   const [solBalance, setSolBalance] = useState(2.45);
@@ -55,6 +68,8 @@ export default function App() {
   const [isSkrModalVisible, setIsSkrModalVisible] = useState(false);
 
   const walletManager = MobileWalletManager.getInstance();
+
+  // ── Handlers ──────────────────────────────────────────────
 
   const handleConnectWallet = async () => {
     try {
@@ -159,6 +174,18 @@ export default function App() {
     );
   };
 
+  const handleTabPress = (tab: TabId) => {
+    if (tab !== activeTab) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setActiveTab(tab);
+    }
+  };
+
+  // AI Lab suggestion handler
+  const handleAiSuggestion = (text: string) => {
+    setIsAiModalVisible(true);
+  };
+
   // Filtered baskets
   const filteredBaskets = baskets.filter((b) => {
     if (filter === 'TECH') return b.category.includes('Tech') || b.category.includes('Semiconductors');
@@ -166,6 +193,139 @@ export default function App() {
     if (filter === 'ENERGY') return b.category.includes('Energy');
     return true;
   });
+
+  // AI-generated baskets (those not in original STOCK_BASKETS)
+  const aiBaskets = baskets.filter(
+    (b) => !STOCK_BASKETS.some((sb) => sb.id === b.id)
+  );
+
+  // ── Tab Content Renderers ─────────────────────────────────
+
+  const renderPortfolioTab = () => (
+    <ScrollView
+      style={styles.tabContent}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.tabContentContainer}
+    >
+      <PortfolioCard
+        position={position}
+        solBalance={solBalance}
+        usdcBalance={usdcBalance}
+        isRebalancing={isRebalancing}
+        onDepositPress={() => {
+          if (baskets.length > 0) {
+            setSelectedBasket(baskets[0]);
+            setIsInvestModalVisible(true);
+          }
+        }}
+        onWithdrawPress={handleWithdrawPress}
+        onRebalance={handleRebalance}
+        onFaucetPress={handleFaucetPress}
+        onSimulateShock={handleSimulateShock}
+      />
+      <View style={{ height: 100 }} />
+    </ScrollView>
+  );
+
+  const renderBasketsTab = () => (
+    <ScrollView
+      style={styles.tabContent}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.tabContentContainer}
+    >
+      {/* Section Heading & Category Filters */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Thematic Equity Baskets</Text>
+        <Text style={styles.sectionCount}>{filteredBaskets.length} Strategies</Text>
+      </View>
+
+      <View style={styles.filterRow}>
+        {[
+          { id: 'ALL', label: 'All Baskets' },
+          { id: 'TECH', label: '⚡ Tech' },
+          { id: 'SEEKER', label: '💎 $SKR Alpha' },
+          { id: 'ENERGY', label: '🌿 Energy' },
+        ].map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={[
+              styles.filterPill,
+              filter === item.id && styles.filterPillActive,
+            ]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setFilter(item.id as FilterCategory);
+            }}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[
+                styles.filterText,
+                filter === item.id && styles.filterTextActive,
+              ]}
+            >
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Baskets Cards List */}
+      {filteredBaskets.map((basket) => (
+        <BasketCard
+          key={basket.id}
+          basket={basket}
+          onSelect={handleSelectBasket}
+        />
+      ))}
+
+      <View style={{ height: 100 }} />
+    </ScrollView>
+  );
+
+  const renderAiLabTab = () => (
+    <AILabScreen
+      onOpenAiModal={() => setIsAiModalVisible(true)}
+      onSuggestionPress={handleAiSuggestion}
+      aiBaskets={aiBaskets}
+      onSelectBasket={handleSelectBasket}
+    />
+  );
+
+  const renderVaultTab = () => (
+    <VaultScreen
+      skrBalance={skrBalance}
+      solBalance={solBalance}
+      usdcBalance={usdcBalance}
+      position={position}
+      onClaimSkr={handleClaimSkr}
+      onFaucetPress={handleFaucetPress}
+      onWithdrawPress={handleWithdrawPress}
+      onSkrPress={() => setIsSkrModalVisible(true)}
+    />
+  );
+
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'portfolio':
+        return renderPortfolioTab();
+      case 'baskets':
+        return renderBasketsTab();
+      case 'ai':
+        return renderAiLabTab();
+      case 'vault':
+        return renderVaultTab();
+    }
+  };
+
+  // ── Tab Configuration ─────────────────────────────────────
+
+  const TABS: { id: TabId; label: string; Icon: typeof BarChart3 }[] = [
+    { id: 'portfolio', label: 'Portfolio', Icon: BarChart3 },
+    { id: 'baskets', label: 'Trade', Icon: Layers },
+    { id: 'ai', label: 'AI Lab', Icon: Sparkles },
+    { id: 'vault', label: 'Vault', Icon: ShieldCheck },
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -187,102 +347,44 @@ export default function App() {
         onSkrPress={() => setIsSkrModalVisible(true)}
       />
 
-      <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
-        {/* Main Hero Portfolio Card */}
-        <PortfolioCard
-          position={position}
-          solBalance={solBalance}
-          usdcBalance={usdcBalance}
-          isRebalancing={isRebalancing}
-          onDepositPress={() => {
-            if (baskets.length > 0) {
-              setSelectedBasket(baskets[0]);
-              setIsInvestModalVisible(true);
-            }
-          }}
-          onWithdrawPress={handleWithdrawPress}
-          onRebalance={handleRebalance}
-          onFaucetPress={handleFaucetPress}
-          onSimulateShock={handleSimulateShock}
-        />
+      {/* Active Tab Content */}
+      <View style={styles.tabBody}>
+        {renderActiveTab()}
+      </View>
 
-        {/* AI Strategy Generator Banner */}
-        <TouchableOpacity
-          style={styles.aiBanner}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setIsAiModalVisible(true);
-          }}
-          activeOpacity={0.88}
-        >
-          <View style={styles.aiBannerLeft}>
-            <View style={styles.aiIconBadge}>
-              <Wand2 size={16} color="#A855F7" />
-            </View>
-            <View style={styles.aiTextContainer}>
-              <View style={styles.aiTitleRow}>
-                <Text style={styles.aiBannerTitle}>AI Strategy Architect</Text>
-                <Sparkles size={12} color="#C084FC" />
-              </View>
-              <Text style={styles.aiBannerDesc}>
-                Synthesize custom stock baskets from plain English macro ideas
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.aiCreatePill}>
-            <Text style={styles.aiCreateText}>Create ›</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Section Heading & Category Filters */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Thematic Equity Baskets</Text>
-          <Text style={styles.sectionCount}>{filteredBaskets.length} Strategies</Text>
-        </View>
-
-        <View style={styles.filterRow}>
-          {[
-            { id: 'ALL', label: 'All Baskets' },
-            { id: 'TECH', label: '⚡ Tech' },
-            { id: 'SEEKER', label: '💎 $SKR Alpha' },
-            { id: 'ENERGY', label: '🌿 Energy' },
-          ].map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[
-                styles.filterPill,
-                filter === item.id && styles.filterPillActive,
-              ]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setFilter(item.id as FilterCategory);
-              }}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  filter === item.id && styles.filterTextActive,
-                ]}
+      {/* ── Floating Bottom Tab Dock ── */}
+      <View style={styles.bottomDockContainer}>
+        <View style={styles.bottomDock}>
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[styles.tabButton, isActive && styles.tabButtonActive]}
+                onPress={() => handleTabPress(tab.id)}
+                activeOpacity={0.7}
               >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <View style={[styles.tabIconWrap, isActive && styles.tabIconWrapActive]}>
+                  <tab.Icon
+                    size={isActive ? 20 : 18}
+                    color={isActive ? '#00F0FF' : '#64748B'}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    isActive && styles.tabLabelActive,
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+                {isActive && <View style={styles.activeIndicator} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
-
-        {/* Baskets Cards List */}
-        {filteredBaskets.map((basket) => (
-          <BasketCard
-            key={basket.id}
-            basket={basket}
-            onSelect={handleSelectBasket}
-          />
-        ))}
-
-        <View style={{ height: 48 }} />
-      </ScrollView>
+      </View>
 
       {/* Modals */}
       <InvestModal
@@ -309,6 +411,22 @@ export default function App() {
   );
 }
 
+// ── Responsive Sizing Helpers ─────────────────────────────
+
+const hp = (percentage: number) => {
+  const { height } = Dimensions.get('window');
+  return (percentage / 100) * height;
+};
+
+const wp = (percentage: number) => {
+  return (percentage / 100) * SCREEN_WIDTH;
+};
+
+const scale = (size: number) => {
+  const baseWidth = 375; // iPhone standard
+  return (SCREEN_WIDTH / baseWidth) * size;
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -332,102 +450,50 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(6, 8, 15, 0.70)',
   },
-  scrollBody: {
+
+  // ── Tab Content Area ──
+  tabBody: {
     flex: 1,
   },
-  aiBanner: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    backgroundColor: '#0E0A1E',
-    borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.45)',
-    borderRadius: 18,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: '#A855F7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-  },
-  aiBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-    paddingRight: 8,
-  },
-  aiIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(168, 85, 247, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiTextContainer: {
+  tabContent: {
     flex: 1,
   },
-  aiTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+  tabContentContainer: {
+    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
   },
-  aiBannerTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#F8FAFC',
-  },
-  aiBannerDesc: {
-    fontSize: 11,
-    color: '#94A3B8',
-    marginTop: 2,
-    lineHeight: 14,
-  },
-  aiCreatePill: {
-    backgroundColor: '#A855F7',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-  },
-  aiCreateText: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
+
+  // ── Section Headers (Baskets tab) ──
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 18,
-    marginBottom: 10,
+    marginHorizontal: wp(4.3),
+    marginTop: scale(14),
+    marginBottom: scale(10),
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: '800',
     color: '#F8FAFC',
     letterSpacing: -0.2,
   },
   sectionCount: {
-    fontSize: 11,
+    fontSize: scale(11),
     fontWeight: '800',
     color: '#00F0FF',
     fontFamily: 'monospace',
   },
   filterRow: {
     flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    gap: 6,
+    marginHorizontal: wp(4.3),
+    marginBottom: scale(12),
+    gap: scale(6),
+    flexWrap: 'wrap',
   },
   filterPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    paddingHorizontal: scale(10),
+    paddingVertical: scale(5),
+    borderRadius: scale(8),
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth: 1,
     borderColor: '#1E293B',
@@ -437,12 +503,76 @@ const styles = StyleSheet.create({
     borderColor: '#00F0FF',
   },
   filterText: {
-    fontSize: 11,
+    fontSize: scale(11),
     fontWeight: '700',
     color: '#64748B',
   },
   filterTextActive: {
     color: '#00F0FF',
     fontWeight: '800',
+  },
+
+  // ── Bottom Navigation Dock ──
+  bottomDockContainer: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? hp(3.5) : hp(1.5),
+    left: wp(4),
+    right: wp(4),
+  },
+  bottomDock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: 'rgba(10, 16, 28, 0.92)',
+    borderRadius: scale(22),
+    paddingVertical: scale(8),
+    paddingHorizontal: scale(6),
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.15)',
+    // Glass shadow effect
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 20,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: scale(4),
+    position: 'relative',
+  },
+  tabButtonActive: {
+    // active tab styling handled by children
+  },
+  tabIconWrap: {
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabIconWrapActive: {
+    backgroundColor: 'rgba(0, 240, 255, 0.12)',
+  },
+  tabLabel: {
+    fontSize: scale(10),
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: scale(2),
+    letterSpacing: 0.2,
+  },
+  tabLabelActive: {
+    color: '#00F0FF',
+    fontWeight: '800',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: scale(-2),
+    width: scale(16),
+    height: scale(2.5),
+    borderRadius: scale(2),
+    backgroundColor: '#00F0FF',
   },
 });
