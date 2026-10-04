@@ -110,11 +110,19 @@ export default function App() {
     setIsRefreshing(true);
 
     try {
-      // Fetch real SOL balance
+      // 1. Fetch real SOL balance
       const sol = await walletManager.getSolBalance(session.publicKey);
       setSolBalance(sol);
 
-      // Fetch vault PDA account info
+      // 2. Fetch real Devnet USDC balance from ATA
+      const usdc = await walletManager.getUsdcBalance(session.publicKey);
+      setUsdcBalance(usdc);
+
+      // 3. Fetch real $SKR token balance from user ATA
+      const skr = await walletManager.getSkrBalance(session.publicKey);
+      setSkrBalance(skr);
+
+      // 4. Fetch vault PDA account info
       const [vaultPda] = deriveVaultPda(session.publicKey);
       const vaultInfo = await walletManager.getVaultAccountInfo(vaultPda);
 
@@ -138,10 +146,6 @@ export default function App() {
       } else {
         setPosition(null);
       }
-
-      // USDC balance would be fetched from SPL token account
-      // For devnet demo, we track USDC separately (no real SPL token deployed)
-      // setUsdcBalance stays as local state for now
     } catch (err: any) {
       console.warn('Balance refresh failed:', err.message);
     } finally {
@@ -248,12 +252,32 @@ export default function App() {
     setIsInvestModalVisible(true);
   };
 
-  const handleClaimSkr = () => {
-    // $SKR is a governance token — for devnet demo, we track locally
-    // Real integration would call an SPL Token faucet
-    setSkrBalance((prev) => prev + 1000);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Faucet Claimed! 💎', 'Added 1,000 $SKR tokens to your Seeker balance.');
+  const handleClaimSkr = async () => {
+    if (!session) {
+      Alert.alert('Not Connected', 'Please connect your wallet first.');
+      return;
+    }
+
+    try {
+      const signature = await walletManager.claimSkr(1000);
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'On-Chain $SKR Claim Confirmed! 💎',
+        `Claimed 1,000 $SKR tokens minted directly to your ATA.\n\nTx: ${signature.slice(0, 20)}...`,
+        [
+          { text: 'OK' },
+          {
+            text: 'View on Solscan',
+            onPress: () => Linking.openURL(solscanTxLink(signature)),
+          },
+        ]
+      );
+
+      await refreshBalances();
+    } catch (err: any) {
+      handleError(err, 'Claim $SKR');
+    }
   };
 
   const handleFaucetPress = async () => {

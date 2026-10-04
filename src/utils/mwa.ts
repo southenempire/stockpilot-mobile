@@ -22,6 +22,25 @@ export const DEVNET_RPC = 'https://api.devnet.solana.com';
 export const STOCKPILOT_PROGRAM_ID = new PublicKey('CsiP2ZWy1bM6Ghye85r67kiLC2zkBC7FngYCYGAhEPgK');
 export const SOLSCAN_DEVNET_TX = 'https://solscan.io/tx/';
 
+// SPL Token Program IDs
+export const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+export const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+
+// Devnet USDC mint (Circle's official devnet USDC)
+export const USDC_DEVNET_MINT = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
+
+// $SKR mint — derived as PDA from our Anchor program
+export const [SKR_MINT_PDA] = PublicKey.findProgramAddressSync(
+  [Buffer.from('skr_mint')],
+  STOCKPILOT_PROGRAM_ID
+);
+
+// $SKR mint authority — PDA that holds mint authority over SKR
+export const [SKR_MINT_AUTHORITY] = PublicKey.findProgramAddressSync(
+  [Buffer.from('skr_authority')],
+  STOCKPILOT_PROGRAM_ID
+);
+
 export const APP_IDENTITY = {
   name: 'StockPilot',
   uri: 'https://stockpilotsol.xyz',
@@ -83,6 +102,7 @@ function anchorDiscriminator(name: string): Buffer {
     deposit:          [0xf8, 0xc6, 0x9e, 0x91, 0xe1, 0x75, 0x87, 0xc8],
     withdraw:         [0xb7, 0x12, 0x46, 0x9c, 0x94, 0x6d, 0xa1, 0x22],
     rebalance:        [0xa9, 0x3e, 0x7c, 0x51, 0x02, 0xbd, 0x44, 0x16],
+    claim_skr:        [0xd3, 0x8a, 0x15, 0x67, 0xe0, 0x4b, 0x92, 0xf1],
   };
   const disc = DISCRIMINATORS[name];
   if (!disc) throw new Error(`Unknown Anchor instruction: ${name}`);
@@ -171,6 +191,67 @@ export function buildRebalanceIx(
     keys: [
       { pubkey: owner, isSigner: true, isWritable: true },
       { pubkey: vaultPda, isSigner: false, isWritable: true },
+    ],
+    data,
+  });
+}
+
+/**
+ * Derives Associated Token Account (ATA) for a user and mint
+ */
+export function deriveAssociatedTokenAccount(owner: PublicKey, mint: PublicKey): PublicKey {
+  const [ata] = PublicKey.findProgramAddressSync(
+    [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
+  return ata;
+}
+
+/**
+ * Builds standard Associated Token Account creation instruction
+ */
+export function buildCreateAssociatedTokenAccountIx(
+  payer: PublicKey,
+  owner: PublicKey,
+  mint: PublicKey,
+  ata: PublicKey,
+): TransactionInstruction {
+  return new TransactionInstruction({
+    programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+    keys: [
+      { pubkey: payer, isSigner: true, isWritable: true },
+      { pubkey: ata, isSigner: false, isWritable: true },
+      { pubkey: owner, isSigner: false, isWritable: false },
+      { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    ],
+    data: Buffer.alloc(0),
+  });
+}
+
+/**
+ * Build claim_skr on-chain faucet instruction
+ */
+export function buildClaimSkrIx(
+  owner: PublicKey,
+  userSkrAta: PublicKey,
+  amountMinorUnits: bigint,
+): TransactionInstruction {
+  const disc = anchorDiscriminator('claim_skr');
+  const amountBuf = Buffer.alloc(8);
+  amountBuf.writeBigUInt64LE(amountMinorUnits);
+  const data = Buffer.concat([disc, amountBuf]);
+
+  return new TransactionInstruction({
+    programId: STOCKPILOT_PROGRAM_ID,
+    keys: [
+      { pubkey: owner, isSigner: true, isWritable: true },
+      { pubkey: userSkrAta, isSigner: false, isWritable: true },
+      { pubkey: SKR_MINT_PDA, isSigner: false, isWritable: true },
+      { pubkey: SKR_MINT_AUTHORITY, isSigner: false, isWritable: false },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data,
   });
@@ -335,6 +416,34 @@ export class MobileWalletManager {
     return info !== null;
   }
 
+  /**
+   * Fetches real SPL token balance from user's Associated Token Account (ATA)
+   */
+  public async getSplTokenBalance(owner: PublicKey, mint: PublicKey): Promise<number> {
+    try {
+      const ata = deriveAssociatedTokenAccount(owner, mint);
+      const res = await this.connection.getTokenAccountBalance(ata);
+      return res.value.uiAmount || 0;
+    } catch {
+      // If ATA does not exist yet on devnet, balance is 0.0
+      return 0;
+    }
+  }
+
+  /**
+   * Fetches real on-chain Devnet USDC balance from Circle's devnet USDC ATA
+   */
+  public async getUsdcBalance(owner: PublicKey): Promise<number> {
+    return await this.getSplTokenBalance(owner, USDC_DEVNET_MINT);
+  }
+
+  /**
+   * Fetches real on-chain $SKR governance token balance from user's SKR ATA
+   */
+  public async getSkrBalance(owner: PublicKey): Promise<number> {
+    return await this.getSplTokenBalance(owner, SKR_MINT_PDA);
+  }
+
   // ── Devnet SOL Airdrop ──
 
   public async requestAirdrop(address: PublicKey): Promise<string> {
@@ -348,6 +457,33 @@ export class MobileWalletManager {
   }
 
   // ── Transaction Builders ──
+
+  /**
+   * Claim on-chain $SKR tokens from Anchor faucet program
+   * Creates user's SKR ATA if it doesn't exist yet, then invokes claim_skr instruction.
+   */
+  public async claimSkr(amountTokens: number = 1000): Promise<string> {
+    if (!this.currentSession) {
+      throw new MWAError('NO_WALLET', 'Connect your wallet first.');
+    }
+
+    const owner = this.currentSession.publicKey;
+    const userSkrAta = deriveAssociatedTokenAccount(owner, SKR_MINT_PDA);
+    // SKR uses 6 decimals (1 token = 1_000_000 minor units)
+    const amountMinorUnits = BigInt(Math.round(amountTokens * 1e6));
+
+    const tx = new Transaction();
+
+    // Check if ATA exists on-chain; if not, prepend create ATA instruction
+    const ataAccount = await this.connection.getAccountInfo(userSkrAta);
+    if (!ataAccount) {
+      tx.add(buildCreateAssociatedTokenAccountIx(owner, owner, SKR_MINT_PDA, userSkrAta));
+    }
+
+    tx.add(buildClaimSkrIx(owner, userSkrAta, amountMinorUnits));
+
+    return await this.signAndSendTransaction(tx);
+  }
 
   /**
    * Deposit SOL into the Anchor vault PDA.
