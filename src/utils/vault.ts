@@ -1,18 +1,9 @@
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, AccountInfo } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 import { StockBasket, PortfolioPosition, StockAsset } from '../types';
 
-export const STOCKPILOT_PROGRAM_ID = new PublicKey('CsiP2ZWy1bM6Ghye85r67kiLC2zkBC7FngYCYGAhEPgK');
-
-/**
- * Derives the deterministic PDA address for a user's vault
- */
-export function deriveVaultPda(owner: PublicKey): [PublicKey, number] {
-  return PublicKey.findProgramAddressSync(
-    [Buffer.from('stockpilot_vault'), owner.toBuffer()],
-    STOCKPILOT_PROGRAM_ID
-  );
-}
+// Re-export from mwa for backward compatibility
+export { STOCKPILOT_PROGRAM_ID, deriveVaultPda } from './mwa';
 
 /**
  * Calculates protocol fee split based on SKR balance
@@ -53,7 +44,42 @@ export function calculateDrift(targetWeights: { [symbol: string]: number }, curr
 }
 
 /**
- * Simulates a market price change and calculates drifted weights
+ * Parses on-chain vault account data into a PortfolioPosition.
+ * The Anchor account layout for StockpilotVault is:
+ *   8 bytes  - discriminator
+ *   32 bytes - owner pubkey
+ *   8 bytes  - deposited_lamports (u64)
+ *   8 bytes  - last_rebalance_ts (i64)
+ *   1 byte   - is_initialized (bool)
+ *   1 byte   - bump (u8)
+ */
+export function parseVaultAccount(
+  data: Buffer,
+  basketName: string = 'StockPilot Vault',
+): { depositedSol: number; lastRebalanceTs: number; isInitialized: boolean } | null {
+  if (!data || data.length < 58) return null;
+
+  try {
+    // Skip 8-byte discriminator + 32-byte owner
+    const depositedLamports = data.readBigUInt64LE(40);
+    const lastRebalanceTs = Number(data.readBigInt64LE(48));
+    const isInitialized = data[56] === 1;
+
+    return {
+      depositedSol: Number(depositedLamports) / 1e9,
+      lastRebalanceTs,
+      isInitialized,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Simulates a market price change and calculates drifted weights.
+ * This is kept for the "Shock" button demo feature — it does NOT
+ * replace real on-chain state; it only produces a visual preview
+ * of what drift looks like.
  */
 export function simulateMarketMovement(position: PortfolioPosition): PortfolioPosition {
   const newWeights: { [symbol: string]: number } = {};

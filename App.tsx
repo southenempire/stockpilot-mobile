@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -11,6 +11,7 @@ import {
   Image,
   Dimensions,
   Platform,
+  Linking,
 } from 'react-native';
 import { Header } from './src/components/Header';
 import { PortfolioCard } from './src/components/PortfolioCard';
@@ -22,8 +23,14 @@ import { AILabScreen } from './src/components/AILabScreen';
 import { VaultScreen } from './src/components/VaultScreen';
 import { STOCK_BASKETS } from './src/constants/baskets';
 import { StockBasket, PortfolioPosition } from './src/types';
-import { MobileWalletManager, WalletSession } from './src/utils/mwa';
-import { simulateMarketMovement } from './src/utils/vault';
+import {
+  MobileWalletManager,
+  WalletSession,
+  MWAError,
+  deriveVaultPda,
+  solscanTxLink,
+} from './src/utils/mwa';
+import { simulateMarketMovement, parseVaultAccount } from './src/utils/vault';
 import {
   BarChart3,
   Layers,
@@ -40,26 +47,16 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('portfolio');
   const [session, setSession] = useState<WalletSession | null>(null);
-  const [skrBalance, setSkrBalance] = useState(1250);
-  const [solBalance, setSolBalance] = useState(2.45);
-  const [usdcBalance, setUsdcBalance] = useState(1500.0);
+  const [skrBalance, setSkrBalance] = useState(0);
+  const [solBalance, setSolBalance] = useState(0);
+  const [usdcBalance, setUsdcBalance] = useState(0);
   const [baskets, setBaskets] = useState<StockBasket[]>(STOCK_BASKETS);
   const [selectedBasket, setSelectedBasket] = useState<StockBasket | null>(null);
   const [filter, setFilter] = useState<FilterCategory>('ALL');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Active Portfolio State
-  const [position, setPosition] = useState<PortfolioPosition | null>({
-    basketId: 'semi-supremacy',
-    basketName: 'Semiconductor Supremacy',
-    investedUsdc: 250,
-    currentNav: 268.45,
-    pnlUsdc: 18.45,
-    pnlPercent: 7.38,
-    targetWeights: { NVDA: 40, TSM: 25, AVGO: 20, AMD: 15 },
-    currentWeights: { NVDA: 45, TSM: 24, AVGO: 19, AMD: 12 },
-    drift: 5.0,
-  });
-
+  // Active Portfolio State — starts null until fetched from chain
+  const [position, setPosition] = useState<PortfolioPosition | null>(null);
   const [isRebalancing, setIsRebalancing] = useState(false);
 
   // Modals
@@ -69,15 +66,104 @@ export default function App() {
 
   const walletManager = MobileWalletManager.getInstance();
 
+  // ── Error Handler ─────────────────────────────────────────
+
+  const handleError = useCallback((err: any, context: string) => {
+    if (err instanceof MWAError) {
+      switch (err.type) {
+        case 'USER_REJECTED':
+          Alert.alert('Cancelled', err.message);
+          break;
+        case 'NO_WALLET':
+          Alert.alert('No Wallet Found', err.message, [
+            { text: 'OK' },
+            {
+              text: 'Get Phantom',
+              onPress: () => Linking.openURL('https://phantom.app/download'),
+            },
+          ]);
+          break;
+        case 'RPC_ERROR':
+          Alert.alert('Network Error', err.message);
+          break;
+        case 'TX_FAILED':
+          Alert.alert('Transaction Failed', err.message, err.txSignature ? [
+            { text: 'OK' },
+            {
+              text: 'View on Solscan',
+              onPress: () => Linking.openURL(solscanTxLink(err.txSignature!)),
+            },
+          ] : undefined);
+          break;
+        default:
+          Alert.alert(`${context} Error`, err.message);
+      }
+    } else {
+      Alert.alert(`${context} Error`, err?.message || 'An unexpected error occurred.');
+    }
+  }, []);
+
+  // ── Fetch Live Balances from Devnet ───────────────────────
+
+  const refreshBalances = useCallback(async () => {
+    if (!session) return;
+    setIsRefreshing(true);
+
+    try {
+      // Fetch real SOL balance
+      const sol = await walletManager.getSolBalance(session.publicKey);
+      setSolBalance(sol);
+
+      // Fetch vault PDA account info
+      const [vaultPda] = deriveVaultPda(session.publicKey);
+      const vaultInfo = await walletManager.getVaultAccountInfo(vaultPda);
+
+      if (vaultInfo && vaultInfo.data) {
+        const parsed = parseVaultAccount(Buffer.from(vaultInfo.data));
+        if (parsed && parsed.isInitialized) {
+          setPosition({
+            basketId: 'on-chain-vault',
+            basketName: 'StockPilot Anchor Vault',
+            investedUsdc: parsed.depositedSol, // In SOL for devnet
+            currentNav: parsed.depositedSol,
+            pnlUsdc: 0,
+            pnlPercent: 0,
+            targetWeights: {},
+            currentWeights: {},
+            drift: 0,
+          });
+        } else {
+          setPosition(null);
+        }
+      } else {
+        setPosition(null);
+      }
+
+      // USDC balance would be fetched from SPL token account
+      // For devnet demo, we track USDC separately (no real SPL token deployed)
+      // setUsdcBalance stays as local state for now
+    } catch (err: any) {
+      console.warn('Balance refresh failed:', err.message);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [session, walletManager]);
+
+  // Auto-refresh balances when wallet connects or tab changes
+  useEffect(() => {
+    if (session) {
+      refreshBalances();
+    }
+  }, [session, activeTab]);
+
   // ── Handlers ──────────────────────────────────────────────
 
   const handleConnectWallet = async () => {
     try {
       const sess = await walletManager.connect();
       setSession(sess);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e: any) {
-      console.warn(e);
+    } catch (err: any) {
+      handleError(err, 'Wallet Connect');
     }
   };
 
@@ -87,51 +173,67 @@ export default function App() {
   };
 
   const handleConfirmInvest = async (amount: number) => {
-    if (!selectedBasket) return;
+    if (!session) {
+      Alert.alert('Not Connected', 'Please connect your wallet first.');
+      return;
+    }
 
-    const weights: { [s: string]: number } = {};
-    selectedBasket.assets.forEach((a) => {
-      weights[a.symbol] = a.weight;
-    });
+    try {
+      // Convert USDC amount to SOL equivalent for devnet deposit
+      // (On devnet we deposit SOL since there's no real USDC mint)
+      const solAmount = amount / 100; // rough conversion for demo
+      const signature = await walletManager.deposit(solAmount);
 
-    const newPosition: PortfolioPosition = {
-      basketId: selectedBasket.id,
-      basketName: selectedBasket.name,
-      investedUsdc: (position?.investedUsdc || 0) + amount,
-      currentNav: (position?.currentNav || 0) + amount,
-      pnlUsdc: position?.pnlUsdc || 0,
-      pnlPercent: position?.pnlPercent || 0,
-      targetWeights: weights,
-      currentWeights: weights,
-      drift: 0.0,
-    };
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'Deposit Confirmed On-Chain! 🎉',
+        `Deposited ${solAmount.toFixed(4)} SOL to Anchor Vault PDA.\n\nTx: ${signature.slice(0, 20)}...`,
+        [
+          { text: 'OK' },
+          {
+            text: 'View on Solscan',
+            onPress: () => Linking.openURL(solscanTxLink(signature)),
+          },
+        ]
+      );
 
-    setPosition(newPosition);
-    setUsdcBalance((prev) => Math.max(0, prev - amount));
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert(
-      'Deposit Confirmed! 🎉',
-      `Allocated $${amount} USDC to ${selectedBasket.name} via non-custodial Anchor vault PDA.`
-    );
+      // Refresh real balances from chain
+      await refreshBalances();
+    } catch (err: any) {
+      handleError(err, 'Deposit');
+    }
   };
 
   const handleRebalance = async () => {
-    if (!position) return;
+    if (!session) {
+      Alert.alert('Not Connected', 'Please connect your wallet first.');
+      return;
+    }
+
     setIsRebalancing(true);
 
-    setTimeout(async () => {
-      setPosition({
-        ...position,
-        currentWeights: { ...position.targetWeights },
-        drift: 0.0,
-      });
-      setIsRebalancing(false);
+    try {
+      const signature = await walletManager.rebalance();
+
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
-        'Portfolio Rebalanced! ⚡',
-        'Atomic swaps routed through Jupiter DEX. Portfolio weights restored to target allocations with 0% slippage.'
+        'Rebalance Confirmed On-Chain! ⚡',
+        `On-chain rebalance instruction executed.\n\nTx: ${signature.slice(0, 20)}...`,
+        [
+          { text: 'OK' },
+          {
+            text: 'View on Solscan',
+            onPress: () => Linking.openURL(solscanTxLink(signature)),
+          },
+        ]
       );
-    }, 1500);
+
+      await refreshBalances();
+    } catch (err: any) {
+      handleError(err, 'Rebalance');
+    } finally {
+      setIsRebalancing(false);
+    }
   };
 
   const handleSimulateShock = () => {
@@ -147,31 +249,72 @@ export default function App() {
   };
 
   const handleClaimSkr = () => {
+    // $SKR is a governance token — for devnet demo, we track locally
+    // Real integration would call an SPL Token faucet
     setSkrBalance((prev) => prev + 1000);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Faucet Claimed! 💎', 'Added 1,000 $SKR tokens to your Seeker wallet.');
+    Alert.alert('Faucet Claimed! 💎', 'Added 1,000 $SKR tokens to your Seeker balance.');
   };
 
-  const handleFaucetPress = () => {
-    setSolBalance((prev) => prev + 1.0);
-    setUsdcBalance((prev) => prev + 500.0);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Devnet Faucet Funded! 🚰', 'Received 1.0 Devnet SOL & $500 Devnet USDC.');
+  const handleFaucetPress = async () => {
+    if (!session) {
+      Alert.alert('Not Connected', 'Please connect your wallet first.');
+      return;
+    }
+
+    try {
+      const sig = await walletManager.requestAirdrop(session.publicKey);
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'Devnet Airdrop Confirmed! 🚰',
+        `Received 1.0 Devnet SOL.\n\nTx: ${sig.slice(0, 20)}...`,
+        [
+          { text: 'OK' },
+          {
+            text: 'View on Solscan',
+            onPress: () => Linking.openURL(solscanTxLink(sig)),
+          },
+        ]
+      );
+
+      // Refresh real balances
+      await refreshBalances();
+    } catch (err: any) {
+      handleError(err, 'Devnet Faucet');
+    }
   };
 
-  const handleWithdrawPress = () => {
+  const handleWithdrawPress = async () => {
+    if (!session) {
+      Alert.alert('Not Connected', 'Please connect your wallet first.');
+      return;
+    }
     if (!position || position.currentNav <= 0) {
       Alert.alert('Vault Empty', 'No active position to withdraw.');
       return;
     }
-    const withdrawAmount = position.currentNav;
-    setUsdcBalance((prev) => prev + withdrawAmount);
-    setPosition(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert(
-      'Withdrawal Complete 💰',
-      `Withdrew $${withdrawAmount.toFixed(2)} USDC from Anchor Vault to your connected wallet.`
-    );
+
+    try {
+      const signature = await walletManager.withdraw(position.currentNav);
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'Withdrawal Confirmed On-Chain! 💰',
+        `Withdrew ${position.currentNav.toFixed(4)} SOL from Anchor Vault.\n\nTx: ${signature.slice(0, 20)}...`,
+        [
+          { text: 'OK' },
+          {
+            text: 'View on Solscan',
+            onPress: () => Linking.openURL(solscanTxLink(signature)),
+          },
+        ]
+      );
+
+      await refreshBalances();
+    } catch (err: any) {
+      handleError(err, 'Withdraw');
+    }
   };
 
   const handleTabPress = (tab: TabId) => {
