@@ -1,86 +1,157 @@
-# 📱 StockPilot Mobile — Autonomous 24/7 AI Stock Robo-Advisor on Solana Seeker
+# StockPilot Mobile
 
-> Built natively for the **Solana Seeker** phone and the **Solana dApp Store** for the **Clock In Hackathon by RadiantsDAO & Solana Mobile**.
-> 
-> 📲 **Direct APK Download:** [Download StockPilot v1.2.2 Multi-Screen Devnet APK (MWA Wallet Fixed)](https://expo.dev/artifacts/eas/26QYYuffK5StB-LeslZtcJrMA61VjDpJnoEwqL1tYTo.apk)
+<p align="center">
+  <img src="./assets/showcase.jpg" alt="StockPilot Mobile Visual Showcase" width="100%" style="border-radius: 16px; margin: 16px 0;" />
+</p>
 
----
+<p align="center">
+  <strong>Autonomous 24/7 AI-Driven Wealth Management & Thematic Equity Baskets on Solana.</strong>
+</p>
 
-## ⚡ Overview
-**StockPilot Mobile** is a mobile-first autonomous stock robo-advisor designed from the ground up for the **Solana Seeker** device. It empowers users to invest in curated, 24/7 thematic US equity baskets on Solana with non-custodial Anchor PDA vaults, natural language AI portfolio generation, and autonomous rebalancing routed through Jupiter DEX.
+<p align="center">
+  <a href="https://solana.com"><img src="https://img.shields.io/badge/Network-Solana%20Devnet-14F195?style=for-the-badge&logo=solana&logoColor=white" alt="Solana Devnet" /></a>
+  <a href="https://solscan.io/account/CsiP2ZWy1bM6Ghye85r67kiLC2zkBC7FngYCYGAhEPgK?cluster=devnet"><img src="https://img.shields.io/badge/Anchor%20Program-Verified-00F0FF?style=for-the-badge&logo=rust&logoColor=black" alt="Anchor Program" /></a>
+  <a href="https://solanamobile.com"><img src="https://img.shields.io/badge/Solana%20Seeker-Seed%20Vault%20Ready-A855F7?style=for-the-badge&logo=android&logoColor=white" alt="Solana Seeker" /></a>
+  <a href="https://reactnative.dev"><img src="https://img.shields.io/badge/Framework-React%20Native%200.86-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React Native" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-gray?style=for-the-badge" alt="MIT License" /></a>
+</p>
 
----
-
-## 🚀 Key Features
-
-### 1. 🔐 Native Solana Mobile Stack (SMS) & Mobile Wallet Adapter (MWA)
-* 1-Tap bottom-sheet wallet authentication using **MWA Protocol**.
-* Direct integration with **Solana Seeker Seed Vault**, Phantom, and Solflare on Android.
-* Secure transaction signing without exposing private keys.
-
-### 2. 📊 1-Tap Thematic Equity Baskets
-* **Semiconductor Supremacy** ($NVDA, $TSM, $AVGO, $AMD)
-* **Magnificent Titans** ($AAPL, $MSFT, $GOOGL, $AMZN)
-* **Clean Energy & Nuclear** ($CEG, $VST, $NEE, $CCJ)
-* **Seeker Quant Alpha ($SKR)** ($NVDA, $TSLA, $COIN, $SKR)
-
-### 3. 🤖 AI Natural Language Thesis Generator
-* Type any macro thesis in plain English (e.g., *"Space exploration and quantum computing"*).
-* The AI engine dynamically synthesizes asset weights and generates a custom non-custodial portfolio.
-
-### 4. ⚡ Autonomous Rebalancing Engine
-* Real-time portfolio drift calculation against target allocations.
-* Atomic Jupiter DEX swaps restore target weights with sub-second finality and sub-cent Solana gas.
-
-### 5. 💎 $SKR Token Utility & Seeker Genesis VIP Tier
-* **Fee Discounts:**
-  - Standard Tier: 15 bps protocol fee split
-  - Radiant Gold (500 $SKR): 50% discount (7.5 bps)
-  - Genesis VIP (2500 $SKR): **0% Protocol Fees**
-* **Seeker Exclusive Strategies:** Unlocks the high-frequency *Seeker Quant Alpha* strategy.
+<p align="center">
+  <a href="https://expo.dev/accounts/southenx/projects/stockpilot-mobile/builds/06156e37-11bc-4216-a3db-7770d6cb2dfd"><strong>📲 Download Latest Android APK</strong></a> •
+  <a href="https://stockpilotsol.xyz"><strong>🌐 Web App</strong></a> •
+  <a href="https://solscan.io/account/CsiP2ZWy1bM6Ghye85r67kiLC2zkBC7FngYCYGAhEPgK?cluster=devnet"><strong>📜 Solscan Explorer</strong></a>
+</p>
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## ⚡ The Thesis: Why StockPilot on Solana?
+
+Retail wealth management is fundamentally broken. Traditional brokerages restrict investing to archaic 9:30 AM–4:00 PM EST market hours, lock user capital into custodial silos, charge high hidden spreads, and offer zero automated portfolio rebalancing.
+
+Tokenized real-world assets (RWAs) are moving rapidly onto Solana, but retail investors lack a non-custodial, user-friendly robo-advisor layer to construct and maintain diversified portfolios.
+
+**StockPilot solves this by bridging conversational macro intelligence with atomic on-chain execution:**
+1. **24/7 Liquidity:** Invest in tokenized US equity baskets anytime, day or night, bypassing TradFi banking holidays and market closures.
+2. **True Non-Custodial Ownership:** Funds are deposited directly into user-owned Anchor Program Derived Addresses (PDAs). Nobody—not even the protocol—can access or withdraw user capital.
+3. **Solana Seeker Hardware Security:** Seamless 1-tap Mobile Wallet Adapter (MWA) authentication natively integrated with Seeker Seed Vault biometric hardware isolation.
+4. **Accessible Alpha:** Users translate plain conversational macro ideas into balanced, risk-managed on-chain baskets in seconds.
+
+---
+
+## 🏛️ Core Product Features
+
+### 1. 🛡️ Solana Mobile Stack (SMS) & Seeker Seed Vault
+* **Mobile Wallet Adapter (MWA 2.0):** Native bottom-sheet wallet authentication for instant onboarding.
+* **Biometric Hardware Custody:** Signs transactions inside the Seeker Seed Vault or Android wallets (Phantom, Solflare) with zero private key exposure.
+* **Persistent Single-Task Lifecycle:** Activity management guarantees zero session drops during external wallet signing.
+
+### 2. 📊 Thematic Equity Strategies (Baskets)
+Curated baskets designed for macro sector exposure with automated target weighting:
+
+| Strategy | Ticker Allocation | APY Target | Rebalance Engine | Status |
+| :--- | :--- | :---: | :---: | :---: |
+| **AI Semiconductor Titans** | NVDA (35%), TSM (25%), AMD (20%), MSFT (20%) | **+28.4%** | Autonomous Drift | Active |
+| **Clean Energy & Nuclear** | CEG (35%), VST (25%), NEE (20%), CCJ (20%) | **+19.2%** | Autonomous Drift | Active |
+| **Magnificent Tech Titans** | AAPL (30%), MSFT (25%), GOOGL (25%), AMZN (20%) | **+22.1%** | Autonomous Drift | Active |
+| **Seeker Quant Alpha ($SKR)** | NVDA (30%), TSLA (25%), COIN (25%), $SKR (20%) | **+34.6%** | High-Frequency | 💎 VIP |
+
+### 3. 🤖 AI Strategy Architect
+* Users describe any investment thesis in plain English (e.g. *"Next-generation humanoid robotics and energy storage"*).
+* The Gemini-powered AI engine synthesizes the optimal risk-weighted equity basket in real-time.
+* 1-Tap initialization deploys the strategy directly to an on-chain Anchor vault.
+
+### 4. ⚡ Autonomous Drift & Rebalancing Engine
+* Monitors real-time asset weight divergence against target parameters.
+* When portfolio drift exceeds the target threshold (e.g., ≥3.0%), one-tap rebalancing executes atomic swaps to restore target balance.
+* Sub-second settlement and sub-cent network gas on Solana Devnet.
+
+### 5. 💎 $SKR Utility & Seeker Genesis VIP Tiers
+* **Protocol Fee Monetization:** 15 basis points (0.15%) protocol fee collected on-chain directly to the protocol treasury wallet.
+* **Fee Discount Tiers:**
+  * **Cadet (0 $SKR):** 15 bps protocol fee
+  * **Radiant Pilot (500 $SKR):** 50% discount (7.5 bps)
+  * **Genesis Seeker VIP (2,500 $SKR):** **0% Protocol Fees (Free Lifetime Rebalancing)**
+* **Exclusive Strategies:** Access to high-alpha Seeker Quant portfolios.
+
+---
+
+## 🏗️ System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                 STOCKPILOT MOBILE ARCHITECTURE              │
-├──────────────────────────┬──────────────────────────────────┤
-│ Mobile Framework         │ React Native 0.86 / Expo SDK 57  │
-│ Wallet Adapter (MWA)     │ @solana-mobile/mobile-wallet-    │
-│                          │ adapter-protocol-web3js          │
-│ Smart Contracts          │ Anchor / Rust (Solana Devnet)    │
-│ Client Generator         │ Codama (@solana/kit)             │
-│ Routing & Swaps          │ Jupiter DEX Aggregator           │
-│ Haptics & UI             │ Expo Haptics & Custom Cyberpunk  │
-└──────────────────────────┴──────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                          STOCKPILOT CLIENT LAYER                       │
+│       React Native 0.86  •  Expo SDK 57  •  Dark Cyberpunk UI/UX       │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                        SOLANA MOBILE STACK (SMS)                       │
+│    Mobile Wallet Adapter (MWA)  ──►  Seeker Seed Vault / Phantom / Solflare
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                     ON-CHAIN ANCHOR PROGRAM LAYER                      │
+│            Program ID: CsiP2ZWy1bM6Ghye85r67kiLC2zkBC7FngYCYGAhEPgK     │
+├───────────────────────────────────┬────────────────────────────────────┤
+│  initialize_vault                 │ Creates non-custodial PDA vault    │
+│  deposit                          │ Transfers capital with 15 bps fee  │
+│  withdraw_sol                     │ Non-custodial user capital egress  │
+│  rebalance                        │ Executes atomic weight rebalance   │
+└───────────────────────────────────┴────────────────────────────────────┘
 ```
 
 ---
 
-## 📦 How to Build the Android APK
+## 📜 Verified On-Chain Deployments
+
+| Component | Identifier / Address | Explorer |
+| :--- | :--- | :--- |
+| **Anchor Program ID** | `CsiP2ZWy1bM6Ghye85r67kiLC2zkBC7FngYCYGAhEPgK` | [View on Solscan](https://solscan.io/account/CsiP2ZWy1bM6Ghye85r67kiLC2zkBC7FngYCYGAhEPgK?cluster=devnet) |
+| **Protocol Treasury** | `2KtVKiQCMbHrsdAPyjQVVnccpgvt3Y8ggrjgxXCSPyEo` | [View on Solscan](https://solscan.io/account/2KtVKiQCMbHrsdAPyjQVVnccpgvt3Y8ggrjgxXCSPyEo?cluster=devnet) |
+| **Network Cluster** | Solana Devnet (`https://api.devnet.solana.com`) | Devnet Cluster |
+| **Devnet USDC Mint** | `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` | Circle Devnet Mint |
+
+---
+
+## 🛠️ Local Development & Build Guide
+
+### Prerequisites
+* Node.js 20+ & pnpm
+* Android Studio (with Android SDK 34+)
+* EAS CLI (`npm install -g eas-cli`)
+
+### Setup Instructions
 
 ```bash
-# 1. Clone repository
+# 1. Clone the repository
 git clone https://github.com/southenempire/stockpilot-mobile.git
 cd stockpilot-mobile
 
 # 2. Install dependencies
-npm install
+pnpm install
 
-# 3. Start development server
-npm start
+# 3. Typecheck codebase
+npx tsc --noEmit
 
-# 4. Build Android APK via EAS
+# 4. Start Expo development server
+npx expo start
+
+# 5. Build native Android APK via EAS
 npx eas-cli build --platform android --profile preview
 ```
 
 ---
 
-## 🏆 Hackathon Submission Checklist (Clock In by RadiantsDAO)
-* [x] **Functional Android APK** configured with package `com.southenempire.stockpilot`
-* [x] **Solana Mobile Stack (SMS) & Mobile Wallet Adapter (MWA)** integrated for Seeker Seed Vault
-* [x] **Mobile-first UI/UX** designed with native bottom sheets, haptics, and responsive layout
-* [x] **Meaningful On-chain Interactions:** Anchor PDA user vault deposits, fee split logic, and atomic rebalancing
-* [x] **$SKR Track Prize Feature:** Tier-based 0% fee discounts and exclusive Seeker Genesis Quant strategy
+## 👤 Author
+
+Built by **Southen** ([@southenempire](https://github.com/southenempire))
+
+* **Web Application:** [stockpilotsol.xyz](https://stockpilotsol.xyz)
+* **GitHub Repository:** [github.com/southenempire/stockpilot-mobile](https://github.com/southenempire/stockpilot-mobile)
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](./LICENSE).
