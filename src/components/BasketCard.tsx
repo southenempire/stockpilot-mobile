@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { StockBasket } from '../types';
-import { Sparkles } from 'lucide-react-native';
+import { Zap } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface BasketCardProps {
@@ -51,7 +51,7 @@ export const BasketCard: React.FC<BasketCardProps> = ({ basket, onSelect }) => {
           <Text style={styles.categoryLabel}>{basket.category}</Text>
           {basket.isSkrExclusive && (
             <View style={styles.skrBadge}>
-              <Sparkles size={10} color="#C084FC" />
+              <Zap size={10} color="#C084FC" />
               <Text style={styles.skrBadgeText}>Seeker Alpha</Text>
             </View>
           )}

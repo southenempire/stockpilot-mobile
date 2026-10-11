@@ -12,6 +12,7 @@ import {
   Dimensions,
   Platform,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { Header } from './src/components/Header';
 import { PortfolioCard } from './src/components/PortfolioCard';
@@ -34,7 +35,7 @@ import { simulateMarketMovement, parseVaultAccount } from './src/utils/vault';
 import {
   BarChart3,
   Layers,
-  Sparkles,
+  Cpu,
   ShieldCheck,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -44,8 +45,21 @@ type FilterCategory = 'ALL' | 'TECH' | 'SEEKER' | 'ENERGY';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const STATUSBAR_HEIGHT = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0;
+const BOTTOM_DOCK_INSET = Platform.OS === 'ios' ? 24 : 18;
+
+// Clean fintech navigation icons — no generic AI wand/sparkles
+const TABS: { id: TabId; label: string; Icon: typeof BarChart3 }[] = [
+  { id: 'portfolio', label: 'Portfolio', Icon: BarChart3 },
+  { id: 'baskets',   label: 'Trade',     Icon: Layers },
+  { id: 'ai',        label: 'AI Lab',    Icon: Cpu },
+  { id: 'vault',     label: 'Vault',     Icon: ShieldCheck },
+];
+
 export default function App() {
+  const [isLaunching, setIsLaunching] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>('portfolio');
+
   const [session, setSession] = useState<WalletSession | null>(null);
   const [skrBalance, setSkrBalance] = useState(0);
   const [solBalance, setSolBalance] = useState(0);
@@ -66,7 +80,18 @@ export default function App() {
 
   const walletManager = MobileWalletManager.getInstance();
 
+  // ── Native App Launch Experience ──────────────────────────
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLaunching(false);
+    }, 750);
+    return () => clearTimeout(timer);
+  }, []);
+
+
   // ── Error Handler ─────────────────────────────────────────
+
 
   const handleError = useCallback((err: any, context: string) => {
     if (err instanceof MWAError) {
@@ -485,17 +510,29 @@ export default function App() {
     }
   };
 
-  // ── Tab Configuration ─────────────────────────────────────
-
-  const TABS: { id: TabId; label: string; Icon: typeof BarChart3 }[] = [
-    { id: 'portfolio', label: 'Portfolio', Icon: BarChart3 },
-    { id: 'baskets', label: 'Trade', Icon: Layers },
-    { id: 'ai', label: 'AI Lab', Icon: Sparkles },
-    { id: 'vault', label: 'Vault', Icon: ShieldCheck },
-  ];
+  if (isLaunching) {
+    return (
+      <View style={styles.launchContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#06080F" />
+        <Image
+          source={require('./assets/splash-icon.png')}
+          style={styles.launchLogo}
+          resizeMode="contain"
+        />
+        <Text style={styles.launchBrandTitle}>
+          Stock<Text style={styles.brandLogoCyan}>Pilot</Text>
+        </Text>
+        <Text style={styles.launchSubtitle}>Autonomous 24/7 AI Robo-Advisor</Text>
+        <View style={styles.launchStatusBadge}>
+          <ActivityIndicator size="small" color="#00F0FF" />
+          <Text style={styles.launchStatusText}>Initializing Seeker Seed Vault...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#06080F" />
 
       {/* Atmospheric Anime City Skyline Wallpaper */}
@@ -506,77 +543,76 @@ export default function App() {
       />
       <View style={styles.bgOverlay} />
 
-      {/* Header */}
-      <Header
-        session={session}
-        skrBalance={skrBalance}
-        onConnectPress={handleConnectWallet}
-        onSkrPress={() => setIsSkrModalVisible(true)}
-      />
+      {/* Main View with Android Status Bar clearance */}
+      <View style={[styles.container, { paddingTop: STATUSBAR_HEIGHT }]}>
+        {/* Header */}
+        <Header
+          session={session}
+          skrBalance={skrBalance}
+          onConnectPress={handleConnectWallet}
+          onSkrPress={() => setIsSkrModalVisible(true)}
+        />
 
-      {/* Active Tab Content */}
-      <View style={styles.tabBody}>
-        {renderActiveTab()}
-      </View>
-
-      {/* ── Floating Bottom Tab Dock ── */}
-      <View style={styles.bottomDockContainer}>
-        <View style={styles.bottomDock}>
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <TouchableOpacity
-                key={tab.id}
-                style={[styles.tabButton, isActive && styles.tabButtonActive]}
-                onPress={() => handleTabPress(tab.id)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.tabIconWrap, isActive && styles.tabIconWrapActive]}>
-                  <tab.Icon
-                    size={isActive ? 20 : 18}
-                    color={isActive ? '#00F0FF' : '#64748B'}
-                    strokeWidth={isActive ? 2.5 : 2}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    isActive && styles.tabLabelActive,
-                  ]}
-                >
-                  {tab.label}
-                </Text>
-                {isActive && <View style={styles.activeIndicator} />}
-              </TouchableOpacity>
-            );
-          })}
+        {/* Active Tab Content */}
+        <View style={styles.tabBody}>
+          {renderActiveTab()}
         </View>
+
+        {/* ── Floating Bottom Tab Dock (Safely positioned above Android navigation bar) ── */}
+        <View style={[styles.bottomDockContainer, { bottom: BOTTOM_DOCK_INSET }]}>
+          <View style={styles.bottomDock}>
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <TouchableOpacity
+                  key={tab.id}
+                  style={[styles.tabButton, isActive && styles.tabButtonActive]}
+                  onPress={() => handleTabPress(tab.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.tabIconWrap, isActive && styles.tabIconWrapActive]}>
+                    <tab.Icon
+                      size={isActive ? 20 : 18}
+                      color={isActive ? '#00F0FF' : '#64748B'}
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
+                  </View>
+                  <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                    {tab.label}
+                  </Text>
+                  {isActive && <View style={styles.activeIndicator} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Modals */}
+        <InvestModal
+          visible={isInvestModalVisible}
+          basket={selectedBasket}
+          skrBalance={skrBalance}
+          onClose={() => setIsInvestModalVisible(false)}
+          onConfirmInvest={handleConfirmInvest}
+        />
+
+        <AIBasketModal
+          visible={isAiModalVisible}
+          onClose={() => setIsAiModalVisible(false)}
+          onBasketCreated={handleAiBasketCreated}
+        />
+
+        <SkrPerksModal
+          visible={isSkrModalVisible}
+          skrBalance={skrBalance}
+          onClose={() => setIsSkrModalVisible(false)}
+          onClaimSkr={handleClaimSkr}
+        />
       </View>
-
-      {/* Modals */}
-      <InvestModal
-        visible={isInvestModalVisible}
-        basket={selectedBasket}
-        skrBalance={skrBalance}
-        onClose={() => setIsInvestModalVisible(false)}
-        onConfirmInvest={handleConfirmInvest}
-      />
-
-      <AIBasketModal
-        visible={isAiModalVisible}
-        onClose={() => setIsAiModalVisible(false)}
-        onBasketCreated={handleAiBasketCreated}
-      />
-
-      <SkrPerksModal
-        visible={isSkrModalVisible}
-        skrBalance={skrBalance}
-        onClose={() => setIsSkrModalVisible(false)}
-        onClaimSkr={handleClaimSkr}
-      />
     </SafeAreaView>
   );
 }
+
 
 // ── Responsive Sizing Helpers ─────────────────────────────
 
@@ -595,9 +631,60 @@ const scale = (size: number) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeContainer: {
     flex: 1,
     backgroundColor: '#06080F',
+  },
+  launchContainer: {
+    flex: 1,
+    backgroundColor: '#06080F',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  launchLogo: {
+    width: 96,
+    height: 96,
+    borderRadius: 24,
+    marginBottom: 20,
+  },
+  launchBrandTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  brandLogoCyan: {
+    color: '#00F0FF',
+  },
+  launchSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 4,
+    marginBottom: 32,
+    letterSpacing: 0.2,
+  },
+  launchStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 240, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.25)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 8,
+  },
+  launchStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#00F0FF',
+    fontFamily: 'monospace',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   bgWallpaper: {
     position: 'absolute',
@@ -626,7 +713,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tabContentContainer: {
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+    paddingBottom: 110, // clears floating dock (~70px) + nav bar insets
   },
 
   // ── Section Headers (Baskets tab) ──
@@ -682,7 +769,7 @@ const styles = StyleSheet.create({
   // ── Bottom Navigation Dock ──
   bottomDockContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? hp(3.5) : hp(1.5),
+    // bottom is set dynamically via insets.bottom in JSX
     left: wp(4),
     right: wp(4),
   },
@@ -733,6 +820,18 @@ const styles = StyleSheet.create({
   tabLabelActive: {
     color: '#00F0FF',
     fontWeight: '800',
+  },
+  tabGlyph: {
+    fontSize: scale(22),
+    color: '#64748B',
+    lineHeight: scale(26),
+    textAlign: 'center',
+  },
+  tabGlyphActive: {
+    color: '#00F0FF',
+    textShadowColor: 'rgba(0, 240, 255, 0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   activeIndicator: {
     position: 'absolute',

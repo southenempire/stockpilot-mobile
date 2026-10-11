@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SKR_TIERS } from '../constants/baskets';
-import { X, Sparkles, ShieldCheck, Zap, Gift, Check } from 'lucide-react-native';
+import { X, Gem, ShieldCheck, Zap, Gift, Check } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface SkrPerksModalProps {
@@ -31,7 +31,7 @@ export const SkrPerksModal: React.FC<SkrPerksModalProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <Sparkles size={22} color="#A855F7" />
+              <Gem size={22} color="#A855F7" />
               <View>
                 <Text style={styles.kicker}>SOLANA SEEKER ECOSYSTEM</Text>
                 <Text style={styles.title}>$SKR Token Utility</Text>

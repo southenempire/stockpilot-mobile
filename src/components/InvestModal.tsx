@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { StockBasket } from '../types';
 import { calculateProtocolFee } from '../utils/vault';
-import { X, ShieldCheck, Sparkles } from 'lucide-react-native';
+import { X, ShieldCheck, Zap } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface InvestModalProps {
@@ -129,7 +129,7 @@ export const InvestModal: React.FC<InvestModalProps> = ({
                   <Text style={styles.breakdownLabel}>Protocol Fee ({bps} bps):</Text>
                   {bps === 0 && (
                     <View style={styles.vipTag}>
-                      <Sparkles size={9} color="#C084FC" />
+                      <Zap size={9} color="#C084FC" />
                       <Text style={styles.vipTagText}>Genesis VIP 0%</Text>
                     </View>
                   )}

@@ -9,6 +9,7 @@
     "newArchEnabled": false,
     "userInterfaceStyle": "dark",
     "splash": {
+      "image": "./assets/splash-icon.png",
       "backgroundColor": "#06080F",
       "resizeMode": "contain"
     },

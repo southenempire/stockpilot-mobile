@@ -12,7 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { StockBasket } from '../types';
-import { X, Sparkles, Wand2, CheckCircle2, ArrowRight } from 'lucide-react-native';
+import { X, Cpu, Zap, CheckCircle2, ArrowRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface AIBasketModalProps {
@@ -81,7 +81,7 @@ export const AIBasketModal: React.FC<AIBasketModalProps> = ({
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.titleRow}>
-                <Sparkles size={18} color="#A855F7" />
+                <Cpu size={18} color="#A855F7" />
                 <Text style={styles.title}>AI Thesis Architect</Text>
               </View>
               <TouchableOpacity
@@ -142,7 +142,7 @@ export const AIBasketModal: React.FC<AIBasketModalProps> = ({
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Wand2 size={16} color="#FFFFFF" />
+                    <Zap size={16} color="#FFFFFF" />
                     <Text style={styles.generateBtnText}>Synthesize Custom Strategy</Text>
                   </>
                 )}

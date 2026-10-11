@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { WalletSession } from '../utils/mwa';
-import { Sparkles, ShieldCheck, Wallet } from 'lucide-react-native';
+import { Zap, ShieldCheck, Wallet } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface HeaderProps {
@@ -38,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
           }}
           activeOpacity={0.8}
         >
-          <Sparkles size={11} color="#00F0FF" />
+          <Zap size={11} color="#00F0FF" />
           <Text style={styles.skrChipText}>
             $SKR Balance: <Text style={styles.skrChipBold}>{skrBalance.toLocaleString()} SKR</Text>
           </Text>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import { Wand2, Sparkles, Brain, Lightbulb, Zap, ChevronRight } from 'lucide-react-native';
+import { Cpu, Compass, Layers, Zap, ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { StockBasket } from '../types';
 
@@ -47,16 +47,16 @@ export const AILabScreen: React.FC<AILabScreenProps> = ({
       <View style={styles.heroCard}>
         <View style={styles.heroHeader}>
           <View style={styles.iconContainer}>
-            <Wand2 size={28} color="#A855F7" />
+            <Cpu size={28} color="#A855F7" />
           </View>
           <Text style={styles.heroTitle}>AI Strategy Architect</Text>
         </View>
         <Text style={styles.heroSubtitle}>
-          Synthesize custom stock baskets from plain English macro ideas.
+          Synthesize quantitative stock baskets from plain English macro theses.
         </Text>
         <TouchableOpacity style={styles.ctaButton} onPress={handleOpenAiModal} activeOpacity={0.8}>
-          <Sparkles size={20} color="#000" />
-          <Text style={styles.ctaText}>Create AI Basket</Text>
+          <Zap size={18} color="#000" />
+          <Text style={styles.ctaText}>Synthesize Basket</Text>
         </TouchableOpacity>
       </View>
 
@@ -79,8 +79,8 @@ export const AILabScreen: React.FC<AILabScreenProps> = ({
             <Text style={styles.stepNumber}>2</Text>
           </View>
           <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>AI Generates Basket</Text>
-            <Text style={styles.stepDescription}>Gemini Pro synthesizes optimal allocation</Text>
+            <Text style={styles.stepTitle}>Algorithmic Optimization</Text>
+            <Text style={styles.stepDescription}>Gemini Pro synthesizes optimal weights</Text>
           </View>
         </View>
 
@@ -98,8 +98,8 @@ export const AILabScreen: React.FC<AILabScreenProps> = ({
       {/* Example Prompts */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Lightbulb size={20} color="#A855F7" />
-          <Text style={styles.sectionTitleWithIcon}>Quick Ideas</Text>
+          <Compass size={20} color="#A855F7" />
+          <Text style={styles.sectionTitleWithIcon}>Market Ideas</Text>
         </View>
         <View style={styles.chipsContainer}>
           {suggestions.map((suggestion, index) => (
@@ -118,7 +118,7 @@ export const AILabScreen: React.FC<AILabScreenProps> = ({
       {/* History */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Brain size={20} color="#A855F7" />
+          <Layers size={20} color="#A855F7" />
           <Text style={styles.sectionTitleWithIcon}>Generated Baskets</Text>
         </View>
 
