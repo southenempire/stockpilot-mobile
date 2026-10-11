@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <a href="https://expo.dev/artifacts/eas/gr0UvgBuWMGG2-riEPXkUo6UDLuWagsinwZ1qwGghl4.apk"><strong>📲 Download Android APK (Direct v1.2.3)</strong></a> •
+  <a href="https://expo.dev/artifacts/eas/J9vVK7kcNppX0nenEYACYkVJ9xrmWhPtx40DaWnqvQE.apk"><strong>📲 Download Android APK (Direct v1.2.3)</strong></a> •
   <a href="https://stockpilotsol.xyz"><strong>🌐 Web App</strong></a> •
   <a href="https://solscan.io/account/CsiP2ZWy1bM6Ghye85r67kiLC2zkBC7FngYCYGAhEPgK?cluster=devnet"><strong>📜 Solscan Explorer</strong></a>
 </p>
