@@ -2,7 +2,7 @@
 
 > Built natively for the **Solana Seeker** phone and the **Solana dApp Store** for the **Clock In Hackathon by RadiantsDAO & Solana Mobile**.
 > 
-> 📲 **Direct APK Download:** [Download StockPilot v1.2.1 Multi-Screen Devnet APK](https://expo.dev/artifacts/eas/NCCcUg8O3u_rgYfaJlU_B8uYnQHif-UjDErqtOWk9qA.apk)
+> 📲 **Direct APK Download:** [Download StockPilot v1.2.2 Multi-Screen Devnet APK (MWA Wallet Fixed)](https://expo.dev/artifacts/eas/26QYYuffK5StB-LeslZtcJrMA61VjDpJnoEwqL1tYTo.apk)
 
 ---
 
