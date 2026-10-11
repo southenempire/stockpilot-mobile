@@ -73,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <>
               <Wallet size={14} color="#00F0FF" />
-              <Text style={styles.walletTextDisconnected}>Connect Seeker</Text>
+              <Text style={styles.walletTextDisconnected}>Connect Wallet</Text>
             </>
           )}
         </TouchableOpacity>

@@ -76,6 +76,21 @@ export class MWAError extends Error {
 
 // ── Vault PDA Derivation ────────────────────────────────────
 
+/**
+ * Safely parses an address returned by MWA.
+ * MWA specification returns the 32-byte public key encoded as a base64 string.
+ * Some wallets return base58 string.
+ */
+export function parseMwaAddress(address: string): PublicKey {
+  try {
+    const buf = Buffer.from(address, 'base64');
+    if (buf.length === 32) {
+      return new PublicKey(buf);
+    }
+  } catch {}
+  return new PublicKey(address);
+}
+
 export function deriveVaultPda(owner: PublicKey): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [Buffer.from('stockpilot_vault'), owner.toBuffer()],
@@ -281,10 +296,20 @@ export class MobileWalletManager {
     const msg = err?.message?.toLowerCase?.() || '';
 
     if (msg.includes('user reject') || msg.includes('user decline') || msg.includes('cancelled')) {
-      return new MWAError('USER_REJECTED', 'Transaction was rejected by the user.');
+      return new MWAError('USER_REJECTED', 'Wallet connection was cancelled.');
     }
-    if (msg.includes('no wallet') || msg.includes('not found') || msg.includes('no installed')) {
-      return new MWAError('NO_WALLET', 'No Solana wallet app found. Install Phantom or Solflare on this device.');
+    if (
+      msg.includes('no wallet') ||
+      msg.includes('not found') ||
+      msg.includes('no installed') ||
+      msg.includes('activitynotfound') ||
+      msg.includes('found no installed wallet') ||
+      msg.includes('no activity found')
+    ) {
+      return new MWAError(
+        'NO_WALLET',
+        'No compatible Solana wallet found. Please install Phantom or Solflare from Google Play (or use the built-in Seed Vault on Solana Seeker).'
+      );
     }
     if (msg.includes('rpc') || msg.includes('network') || msg.includes('fetch') || msg.includes('timeout')) {
       return new MWAError('RPC_ERROR', 'Network error connecting to Solana Devnet. Check your connection.');
@@ -308,10 +333,11 @@ export class MobileWalletManager {
           cluster: 'devnet',
         });
 
-        const pubkey = new PublicKey(authResult.accounts[0].address);
+        // Parse address: MWA protocol returns 32 bytes encoded as base64
+        const pubkey = parseMwaAddress(authResult.accounts[0].address);
         return {
           publicKey: pubkey,
-          accountLabel: authResult.accounts[0].label || 'Seeker Wallet',
+          accountLabel: authResult.accounts[0].label || 'Connected Wallet',
           authToken: authResult.auth_token,
         };
       });
@@ -351,7 +377,8 @@ export class MobileWalletManager {
         });
       });
 
-      const signature = Buffer.from(signatures[0]).toString('base64');
+      // signatures[0] from web3js wrapper is already a base58 transaction signature string
+      const signature = String(signatures[0]);
 
       // Wait for on-chain confirmation
       const confirmation = await this.connection.confirmTransaction(
