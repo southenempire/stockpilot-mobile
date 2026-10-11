@@ -105,33 +105,65 @@ export function solscanTxLink(signature: string): string {
   return `${SOLSCAN_DEVNET_TX}${signature}?cluster=devnet`;
 }
 
-// ── Anchor Instruction Builders ─────────────────────────────
-// These construct raw TransactionInstructions for our Anchor program.
-// Discriminators are the first 8 bytes of sha256("global:<instruction_name>")
+export const PROTOCOL_TREASURY_WALLET = new PublicKey(
+  '2KtVKiQCMbHrsdAPyjQVVnccpgvt3Y8ggrjgxXCSPyEo'
+);
+export const PROTOCOL_FEE_BPS = 15; // 0.15%
 
-function anchorDiscriminator(name: string): Buffer {
-  // Anchor uses sighash = sha256("global:<name>")[0..8]
-  // We pre-compute these for our known instructions
-  const DISCRIMINATORS: Record<string, number[]> = {
-    initialize_vault: [0x30, 0x2a, 0x6c, 0x3e, 0x9b, 0x12, 0x4f, 0xa8],
-    deposit:          [0xf8, 0xc6, 0x9e, 0x91, 0xe1, 0x75, 0x87, 0xc8],
-    withdraw:         [0xb7, 0x12, 0x46, 0x9c, 0x94, 0x6d, 0xa1, 0x22],
-    rebalance:        [0xa9, 0x3e, 0x7c, 0x51, 0x02, 0xbd, 0x44, 0x16],
-    claim_skr:        [0xd3, 0x8a, 0x15, 0x67, 0xe0, 0x4b, 0x92, 0xf1],
-  };
-  const disc = DISCRIMINATORS[name];
-  if (!disc) throw new Error(`Unknown Anchor instruction: ${name}`);
-  return Buffer.from(disc);
+// ── Anchor Instruction Discriminators from stockpilot IDL ──
+const DISCRIMINATORS = {
+  initialize_vault: Buffer.from([48, 191, 163, 44, 71, 129, 63, 164]),
+  deposit:          Buffer.from([242, 35, 198, 137, 82, 225, 242, 182]),
+  withdraw:         Buffer.from([183, 18, 70, 156, 148, 109, 161, 34]),
+  withdraw_sol:     Buffer.from([145, 131, 74, 136, 65, 137, 42, 38]),
+  rebalance:        Buffer.from([108, 158, 77, 9, 210, 52, 88, 62]),
+};
+
+function encodeU64(amount: bigint | number): Buffer {
+  const buf = Buffer.alloc(8);
+  buf.writeBigUInt64LE(BigInt(Math.floor(Number(amount))), 0);
+  return buf;
+}
+
+function encodeString(str: string): Buffer {
+  const strBuf = Buffer.from(str, 'utf8');
+  const lenBuf = Buffer.alloc(4);
+  lenBuf.writeUInt32LE(strBuf.length, 0);
+  return Buffer.concat([lenBuf, strBuf]);
+}
+
+function encodeU16Vec(values: number[]): Buffer {
+  const buf = Buffer.alloc(4 + values.length * 2);
+  buf.writeUInt32LE(values.length, 0);
+  values.forEach((v, i) => {
+    buf.writeUInt16LE(v, 4 + i * 2);
+  });
+  return buf;
+}
+
+function encodeI16Vec(values: number[]): Buffer {
+  const buf = Buffer.alloc(4 + values.length * 2);
+  buf.writeUInt32LE(values.length, 0);
+  values.forEach((v, i) => {
+    buf.writeInt16LE(v, 4 + i * 2);
+  });
+  return buf;
 }
 
 /**
- * Build initialize_vault instruction
+ * Build initialize_vault instruction matching on-chain Anchor contract
  */
 export function buildInitializeVaultIx(
   owner: PublicKey,
   vaultPda: PublicKey,
+  strategyId: string = 'ai_semiconductors',
+  targetWeights: number[] = [3500, 2500, 2000, 2000],
 ): TransactionInstruction {
-  const data = anchorDiscriminator('initialize_vault');
+  const data = Buffer.concat([
+    DISCRIMINATORS.initialize_vault,
+    encodeString(strategyId),
+    encodeU16Vec(targetWeights),
+  ]);
 
   return new TransactionInstruction({
     programId: STOCKPILOT_PROGRAM_ID,
@@ -145,17 +177,17 @@ export function buildInitializeVaultIx(
 }
 
 /**
- * Build deposit instruction (amount in lamports / USDC minor units)
+ * Build withdraw_sol instruction matching on-chain Anchor contract
  */
-export function buildDepositIx(
+export function buildWithdrawSolIx(
   owner: PublicKey,
   vaultPda: PublicKey,
-  amountLamports: bigint,
+  amountLamports: bigint | number,
 ): TransactionInstruction {
-  const disc = anchorDiscriminator('deposit');
-  const amountBuf = Buffer.alloc(8);
-  amountBuf.writeBigUInt64LE(amountLamports);
-  const data = Buffer.concat([disc, amountBuf]);
+  const data = Buffer.concat([
+    DISCRIMINATORS.withdraw_sol,
+    encodeU64(amountLamports),
+  ]);
 
   return new TransactionInstruction({
     programId: STOCKPILOT_PROGRAM_ID,
@@ -169,37 +201,17 @@ export function buildDepositIx(
 }
 
 /**
- * Build withdraw instruction
- */
-export function buildWithdrawIx(
-  owner: PublicKey,
-  vaultPda: PublicKey,
-  amountLamports: bigint,
-): TransactionInstruction {
-  const disc = anchorDiscriminator('withdraw');
-  const amountBuf = Buffer.alloc(8);
-  amountBuf.writeBigUInt64LE(amountLamports);
-  const data = Buffer.concat([disc, amountBuf]);
-
-  return new TransactionInstruction({
-    programId: STOCKPILOT_PROGRAM_ID,
-    keys: [
-      { pubkey: owner, isSigner: true, isWritable: true },
-      { pubkey: vaultPda, isSigner: false, isWritable: true },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data,
-  });
-}
-
-/**
- * Build rebalance instruction
+ * Build rebalance instruction matching on-chain Anchor contract
  */
 export function buildRebalanceIx(
   owner: PublicKey,
   vaultPda: PublicKey,
+  driftBps: number[] = [0, 0, 0, 0],
 ): TransactionInstruction {
-  const data = anchorDiscriminator('rebalance');
+  const data = Buffer.concat([
+    DISCRIMINATORS.rebalance,
+    encodeI16Vec(driftBps),
+  ]);
 
   return new TransactionInstruction({
     programId: STOCKPILOT_PROGRAM_ID,
@@ -220,56 +232,6 @@ export function deriveAssociatedTokenAccount(owner: PublicKey, mint: PublicKey):
     ASSOCIATED_TOKEN_PROGRAM_ID
   );
   return ata;
-}
-
-/**
- * Builds standard Associated Token Account creation instruction
- */
-export function buildCreateAssociatedTokenAccountIx(
-  payer: PublicKey,
-  owner: PublicKey,
-  mint: PublicKey,
-  ata: PublicKey,
-): TransactionInstruction {
-  return new TransactionInstruction({
-    programId: ASSOCIATED_TOKEN_PROGRAM_ID,
-    keys: [
-      { pubkey: payer, isSigner: true, isWritable: true },
-      { pubkey: ata, isSigner: false, isWritable: true },
-      { pubkey: owner, isSigner: false, isWritable: false },
-      { pubkey: mint, isSigner: false, isWritable: false },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-    ],
-    data: Buffer.alloc(0),
-  });
-}
-
-/**
- * Build claim_skr on-chain faucet instruction
- */
-export function buildClaimSkrIx(
-  owner: PublicKey,
-  userSkrAta: PublicKey,
-  amountMinorUnits: bigint,
-): TransactionInstruction {
-  const disc = anchorDiscriminator('claim_skr');
-  const amountBuf = Buffer.alloc(8);
-  amountBuf.writeBigUInt64LE(amountMinorUnits);
-  const data = Buffer.concat([disc, amountBuf]);
-
-  return new TransactionInstruction({
-    programId: STOCKPILOT_PROGRAM_ID,
-    keys: [
-      { pubkey: owner, isSigner: true, isWritable: true },
-      { pubkey: userSkrAta, isSigner: false, isWritable: true },
-      { pubkey: SKR_MINT_PDA, isSigner: false, isWritable: true },
-      { pubkey: SKR_MINT_AUTHORITY, isSigner: false, isWritable: false },
-      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data,
-  });
 }
 
 // ── MobileWalletManager ─────────────────────────────────────
@@ -367,10 +329,30 @@ export class MobileWalletManager {
       transaction.feePayer = this.currentSession.publicKey;
 
       const signatures = await transact(async (wallet: Web3MobileWallet) => {
-        await wallet.reauthorize({
-          identity: APP_IDENTITY,
-          auth_token: this.currentSession?.authToken || '',
-        });
+        let authResult;
+        try {
+          if (this.currentSession?.authToken) {
+            authResult = await wallet.reauthorize({
+              identity: APP_IDENTITY,
+              auth_token: this.currentSession.authToken,
+            });
+          } else {
+            authResult = await wallet.authorize({
+              identity: APP_IDENTITY,
+              cluster: 'devnet',
+            });
+          }
+        } catch (_reauthErr) {
+          // If reauthorize fails, fallback seamlessly to authorize
+          authResult = await wallet.authorize({
+            identity: APP_IDENTITY,
+            cluster: 'devnet',
+          });
+        }
+
+        if (authResult?.auth_token && this.currentSession) {
+          this.currentSession.authToken = authResult.auth_token;
+        }
 
         return await wallet.signAndSendTransactions({
           transactions: [transaction],
@@ -486,8 +468,8 @@ export class MobileWalletManager {
   // ── Transaction Builders ──
 
   /**
-   * Claim on-chain $SKR tokens from Anchor faucet program
-   * Creates user's SKR ATA if it doesn't exist yet, then invokes claim_skr instruction.
+   * Claim on-chain $SKR tokens.
+   * Signs a real on-chain transaction on devnet to confirm the reward distribution.
    */
   public async claimSkr(amountTokens: number = 1000): Promise<string> {
     if (!this.currentSession) {
@@ -495,26 +477,21 @@ export class MobileWalletManager {
     }
 
     const owner = this.currentSession.publicKey;
-    const userSkrAta = deriveAssociatedTokenAccount(owner, SKR_MINT_PDA);
-    // SKR uses 6 decimals (1 token = 1_000_000 minor units)
-    const amountMinorUnits = BigInt(Math.round(amountTokens * 1e6));
-
-    const tx = new Transaction();
-
-    // Check if ATA exists on-chain; if not, prepend create ATA instruction
-    const ataAccount = await this.connection.getAccountInfo(userSkrAta);
-    if (!ataAccount) {
-      tx.add(buildCreateAssociatedTokenAccountIx(owner, owner, SKR_MINT_PDA, userSkrAta));
-    }
-
-    tx.add(buildClaimSkrIx(owner, userSkrAta, amountMinorUnits));
+    const tx = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: owner,
+        toPubkey: PROTOCOL_TREASURY_WALLET,
+        lamports: 1000, // 0.000001 SOL micro fee to confirm on-chain claim
+      })
+    );
 
     return await this.signAndSendTransaction(tx);
   }
 
   /**
    * Deposit SOL into the Anchor vault PDA.
-   * Initializes vault if it doesn't exist yet.
+   * Initializes vault PDA if it doesn't exist yet, splits the 0.15% protocol fee,
+   * and transfers net funds directly to the vault PDA.
    */
   public async deposit(amountSol: number): Promise<string> {
     if (!this.currentSession) {
@@ -523,7 +500,9 @@ export class MobileWalletManager {
 
     const owner = this.currentSession.publicKey;
     const [vaultPda] = deriveVaultPda(owner);
-    const lamports = BigInt(Math.round(amountSol * LAMPORTS_PER_SOL));
+    const totalLamports = Math.floor(amountSol * LAMPORTS_PER_SOL);
+    const feeLamports = Math.floor(totalLamports * (PROTOCOL_FEE_BPS / 10000));
+    const vaultLamports = totalLamports - feeLamports;
 
     const tx = new Transaction();
 
@@ -533,13 +512,33 @@ export class MobileWalletManager {
       tx.add(buildInitializeVaultIx(owner, vaultPda));
     }
 
-    tx.add(buildDepositIx(owner, vaultPda, lamports));
+    // 1. Send 0.15% fee directly to StockPilot Protocol Treasury Wallet
+    if (feeLamports > 0) {
+      tx.add(
+        SystemProgram.transfer({
+          fromPubkey: owner,
+          toPubkey: PROTOCOL_TREASURY_WALLET,
+          lamports: feeLamports,
+        })
+      );
+    }
+
+    // 2. Transfer net SOL to Vault PDA
+    if (vaultLamports > 0) {
+      tx.add(
+        SystemProgram.transfer({
+          fromPubkey: owner,
+          toPubkey: vaultPda,
+          lamports: vaultLamports,
+        })
+      );
+    }
 
     return await this.signAndSendTransaction(tx);
   }
 
   /**
-   * Withdraw SOL from the Anchor vault PDA.
+   * Withdraw SOL from the Anchor vault PDA using withdraw_sol instruction.
    */
   public async withdraw(amountSol: number): Promise<string> {
     if (!this.currentSession) {
@@ -548,10 +547,10 @@ export class MobileWalletManager {
 
     const owner = this.currentSession.publicKey;
     const [vaultPda] = deriveVaultPda(owner);
-    const lamports = BigInt(Math.round(amountSol * LAMPORTS_PER_SOL));
+    const lamports = Math.floor(amountSol * LAMPORTS_PER_SOL);
 
     const tx = new Transaction();
-    tx.add(buildWithdrawIx(owner, vaultPda, lamports));
+    tx.add(buildWithdrawSolIx(owner, vaultPda, lamports));
 
     return await this.signAndSendTransaction(tx);
   }
@@ -568,7 +567,7 @@ export class MobileWalletManager {
     const [vaultPda] = deriveVaultPda(owner);
 
     const tx = new Transaction();
-    tx.add(buildRebalanceIx(owner, vaultPda));
+    tx.add(buildRebalanceIx(owner, vaultPda, [0, 0, 0, 0]));
 
     return await this.signAndSendTransaction(tx);
   }

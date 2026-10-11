@@ -20,6 +20,7 @@
     "android": {
       "package": "com.southenempire.stockpilot",
       "versionCode": 1,
+      "launchMode": "singleTask",
       "adaptiveIcon": {
         "backgroundColor": "#06080F",
         "foregroundImage": "./assets/android-icon-foreground.png"

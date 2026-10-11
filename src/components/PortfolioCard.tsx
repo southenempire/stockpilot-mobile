@@ -18,6 +18,7 @@ import {
   Droplets,
   AlertTriangle,
   Zap,
+  ShieldCheck,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -58,11 +59,91 @@ export const PortfolioCard: React.FC<PortfolioCardProps> = ({
 
   if (!position) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyTitle}>No Active Portfolio Vault</Text>
-        <Text style={styles.emptySubtitle}>
-          Select any thematic stock basket below to initialize your non-custodial Anchor vault.
-        </Text>
+      <View style={styles.container}>
+        {/* Top Header Label & Devnet Badge */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerLabelGroup}>
+            <Text style={styles.portfolioLabel}>PORTFOLIO VAULT</Text>
+            <View style={styles.devnetTag}>
+              <View style={styles.devnetDot} />
+              <Text style={styles.devnetTagText}>SOLANA DEVNET</Text>
+            </View>
+          </View>
+
+          {/* Live Devnet Balances Split */}
+          <View style={styles.balanceSplit}>
+            <Text style={styles.solBalanceText}>{solBalance.toFixed(3)} SOL</Text>
+            <Text style={styles.usdcBalanceText}>${usdcBalance.toLocaleString()} USDC</Text>
+          </View>
+        </View>
+
+        {/* Main Net Asset Value Row (Zero Vault Deposit) */}
+        <View style={styles.navRow}>
+          <Text style={styles.navSymbol}>$</Text>
+          <Text style={styles.navAmount}>0.00</Text>
+
+          <View style={[styles.pnlPill, styles.pnlNeutral]}>
+            <ShieldCheck size={12} color="#00F0FF" />
+            <Text style={[styles.pnlText, { color: '#00F0FF' }]}>VAULT READY</Text>
+          </View>
+        </View>
+
+        {/* Strategy Subtitle */}
+        <View style={styles.strategyRow}>
+          <Text style={styles.strategyPrefix}>Status:</Text>
+          <Text style={styles.strategyName}>Non-Custodial Anchor PDA Ready</Text>
+        </View>
+
+        {/* Onboarding Guide Card */}
+        <View style={styles.onboardingBox}>
+          <Text style={styles.onboardingTitle}>Autonomous 24/7 Wealth Engine</Text>
+          <Text style={styles.onboardingDesc}>
+            Your Anchor PDA vault is ready to be initialized. Select any stock basket below to deposit funds and activate real-time rebalancing.
+          </Text>
+        </View>
+
+        {/* Primary Action Buttons */}
+        <View style={styles.emptyActionsRow}>
+          <TouchableOpacity
+            style={styles.primaryDepositBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              onDepositPress();
+            }}
+            activeOpacity={0.8}
+          >
+            <Zap size={16} color="#06080F" />
+            <Text style={styles.primaryDepositText}>Deposit & Create First Vault</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.faucetQuickBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              onFaucetPress();
+            }}
+            activeOpacity={0.8}
+          >
+            <Droplets size={15} color="#00F0FF" />
+            <Text style={styles.faucetQuickText}>Request 1 Devnet SOL 🚰</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Micro Badges */}
+        <View style={styles.perksRow}>
+          <View style={styles.perkItem}>
+            <Text style={styles.perkEmoji}>🔐</Text>
+            <Text style={styles.perkLabel}>Non-Custodial</Text>
+          </View>
+          <View style={styles.perkItem}>
+            <Text style={styles.perkEmoji}>⚡</Text>
+            <Text style={styles.perkLabel}>24/7 Liquidity</Text>
+          </View>
+          <View style={styles.perkItem}>
+            <Text style={styles.perkEmoji}>🤖</Text>
+            <Text style={styles.perkLabel}>Auto-Rebalance</Text>
+          </View>
+        </View>
       </View>
     );
   }
@@ -594,5 +675,87 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#E2E8F0',
+  },
+  pnlNeutral: {
+    backgroundColor: 'rgba(0, 240, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.25)',
+  },
+  onboardingBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: '#1E293B',
+  },
+  onboardingTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    marginBottom: 4,
+  },
+  onboardingDesc: {
+    fontSize: 11,
+    color: '#94A3B8',
+    lineHeight: 16,
+  },
+  emptyActionsRow: {
+    flexDirection: 'column',
+    gap: 8,
+    marginTop: 14,
+  },
+  primaryDepositBtn: {
+    backgroundColor: '#00F0FF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 12,
+    gap: 8,
+  },
+  primaryDepositText: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#06080F',
+    letterSpacing: 0.3,
+  },
+  faucetQuickBtn: {
+    backgroundColor: 'rgba(0, 240, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.3)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    borderRadius: 12,
+    gap: 8,
+  },
+  faucetQuickText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#00F0FF',
+  },
+  perksRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#1E293B',
+  },
+  perkItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  perkEmoji: {
+    fontSize: 14,
+  },
+  perkLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#64748B',
+    textAlign: 'center',
   },
 });

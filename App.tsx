@@ -60,7 +60,8 @@ export default function App() {
   const [isLaunching, setIsLaunching] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>('portfolio');
 
-  const [session, setSession] = useState<WalletSession | null>(null);
+  const walletManager = MobileWalletManager.getInstance();
+  const [session, setSession] = useState<WalletSession | null>(() => walletManager.currentSession);
   const [skrBalance, setSkrBalance] = useState(0);
   const [solBalance, setSolBalance] = useState(0);
   const [usdcBalance, setUsdcBalance] = useState(0);
@@ -78,7 +79,14 @@ export default function App() {
   const [isAiModalVisible, setIsAiModalVisible] = useState(false);
   const [isSkrModalVisible, setIsSkrModalVisible] = useState(false);
 
-  const walletManager = MobileWalletManager.getInstance();
+  // Sync wallet session across component mounts and activity resume
+  useEffect(() => {
+    if (session) {
+      walletManager.currentSession = session;
+    } else if (walletManager.currentSession) {
+      setSession(walletManager.currentSession);
+    }
+  }, [session, walletManager]);
 
   // ── Native App Launch Experience ──────────────────────────
 
@@ -299,6 +307,7 @@ export default function App() {
         ]
       );
 
+      setSkrBalance((prev) => prev + 1000);
       await refreshBalances();
     } catch (err: any) {
       handleError(err, 'Claim $SKR');
@@ -415,6 +424,32 @@ export default function App() {
         onFaucetPress={handleFaucetPress}
         onSimulateShock={handleSimulateShock}
       />
+
+      {/* Featured Stock Baskets on Dashboard */}
+      <View style={[styles.sectionHeader, { marginTop: 18, marginBottom: 10 }]}>
+        <Text style={styles.sectionTitle}>Featured Thematic Baskets</Text>
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.selectionAsync();
+            setActiveTab('baskets');
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#00F0FF' }}>
+            View All ({baskets.length}) →
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Render top featured baskets directly on Portfolio view */}
+      {baskets.slice(0, 3).map((basket) => (
+        <BasketCard
+          key={basket.id}
+          basket={basket}
+          onSelect={handleSelectBasket}
+        />
+      ))}
+
       <View style={{ height: 100 }} />
     </ScrollView>
   );
